@@ -73,17 +73,17 @@ This solution deploys a complete browser-based development environment with VS C
 
 ## Configuration Options
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `prefix_code` | Resource naming prefix | "devbox" |
-| `deploy_pipeline` | Enable AWS CodePipeline deployments | false |
-| `rotate_secret` | Enable AWS Secrets Manager rotation | false |
-| `code_server_version` | Version of code-server to install | "4.98.2" |
-| `github_repo` | Public repository to clone as initial workspace | "https://github.com/aws-samples/sample-developer-environment.git"
-| `s3_asset_bucket` | (Optional) S3 bucket containing initial workspace content | "" |
-| `s3_asset_prefix` | (Optional) S3 bucket asset prefix path (must end in '/') | "" |
-| `auto_set_developer_profile` | Set Developer profile as default in terminal sessions | false |
-| `instance_type` | EC2 instance type (supports ARM and x86) | false | "t4g.large" |
+| Parameter | Description |
+|-----------|-------------|
+| `prefix_code` | Resource naming prefix |
+| `deploy_pipeline` | Enable AWS CodePipeline deployments |
+| `rotate_secret` | Enable AWS Secrets Manager rotation |
+| `code_server_version` | Version of code-server to install |
+| `github_repo` | Public repository to clone as initial workspace |
+| `s3_asset_bucket` | (Optional) S3 bucket containing initial workspace content |
+| `s3_asset_prefix` | (Optional) S3 bucket asset prefix path (must end in '/') |
+| `auto_set_developer_profile` | Set Developer profile as default in terminal sessions |
+| `instance_type` | EC2 instance type (supports ARM and x86) | false |
 
 ## AWS IAM Roles
 
