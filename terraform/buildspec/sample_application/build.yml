@@ -1,0 +1,23 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - yum install -y yum-utils
+      - yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+      - yum -y install terraform
+      - terraform --version
+  pre_build:
+    commands:
+      - cd release
+      - terraform init -backend-config="bucket=${bucket}" -backend-config="region=${region}"
+  build:
+    commands:
+      - terraform plan -var="PrefixCode=${prefix_code}" -var="Region=${region}"
+      - terraform apply -auto-approve -var="PrefixCode=${prefix_code}" -var="Region=${region}"
+  post_build:
+    commands:
+      - echo "Terraform apply completed on $(date)"
+      - echo "Website URL -> https://$(terraform output -raw website_url)"
+      - echo "WEBSITE_URL=https://$(terraform output -raw website_url)" >> $CODEBUILD_SRC_DIR/variables.env
+    exported-variables:
+      - WEBSITE_URL

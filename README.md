@@ -1,21 +1,46 @@
 # sample-developer-environment
 
-This solution deploys a complete browser-based development environment with VS Code, version control, and automated deployments using a single AWS CloudFormation template.
+This solution deploys a complete browser-based development environment with VS Code, version control, and automated deployments using Terraform.
+
+> Note: Looking for the CloudFormation version? Check the [main branch](../../tree/main).
 
 ## Repository Structure
 
 ```
 .
-├── dev/                              # Development workspace
-│   └── README.md                     # Development guide
-├── release/                          # Sample Terraform application
-│   ├── main.tf                       # Core infrastructure
-│   ├── provider.tf                   # AWS provider configuration
-│   ├── variables.tf                  # Input variables
-│   ├── versions.tf                   # Provider versions and backend
-│   ├── website.tf                    # Sample static website
-│   └── terraform.tfvars              # Variable defaults
-└── sample-developer-environment.yml  # Main CloudFormation template
+├── dev/                           # Development workspace
+│   └── README.md                  # Development guide
+├── release/                       # Sample Terraform application
+│   ├── main.tf                    # Core infrastructure
+│   ├── outputs.tf                 # Stack outputs
+│   ├── provider.tf                # AWS provider configuration
+│   ├── terraform.tfvars           # Variable defaults
+│   ├── variables.tf               # Input variables
+│   ├── versions.tf                # Provider versions and backend
+│   └── website.tf                 # Sample static website
+└── terraform/                     # Core Terraform configuration
+├── modules/                       # Reusable modules
+│   ├── git-bucket/                # S3 git remote module
+│   │   ├── main.tf                # Bucket and policy configuration
+│   │   ├── outputs.tf             # Module outputs
+│   │   └── variables.tf           # Module variables
+│   └── git-pipeline/              # Pipeline module
+│       ├── main.tf                # Pipeline configuration
+│       └── variables.tf           # Module variables
+├── buildspec/                     # CodeBuild buildspecs
+│   └── sample_application/
+│       ├── build.yml              # Build pipeline spec
+│       └── destroy.yml            # Destroy pipeline spec
+├── developer_workstation.tf       # Core workstation infrastructure
+├── iam_developer_role.tf          # Developer profile IAM roles and policies
+├── instance_user_data.sh          # EC2 user data script
+├── optional_deploy_pipeline.tf    # Optional pipeline resources
+├── optional_rotate_secret.tf      # Optional secret rotation
+├── outputs.tf                     # Stack outputs
+├── provider.tf                    # AWS provider configuration
+├── terraform.tfvars               # Variable values
+├── variables.tf                   # Input variables
+└── versions.tf                    # Provider versions
 ```
 
 ## Key Features
@@ -32,28 +57,33 @@ This solution deploys a complete browser-based development environment with VS C
 
 ## Quick Start
 
-1. Launch the AWS CloudFormation template `sample-developer-environment.yml`
-2. Choose your initial workspace content:
-   - Provide a GitHub repository URL in `GitHubRepo` parameter, OR
-   - Provide S3 bucket name `S3AssetBucket` and `S3AssetPrefix` parameters
-3. Access VS Code through the provided CloudFormation output URL
-4. Get your password from AWS Secrets Manager (link in outputs)
-5. Click *File* > *Open Folder* and navigate to `/home/ec2-user/my-workspace`. This is the git/S3 initialized project directory
-6. Test code in `dev`, copy to `release`, commit and push to trigger deployment
+1. Navigate to the `terraform` directory
+2. Configure your variables in `terraform.tfvars`:
+   - Provide a GitHub repository URL in `github_repo` parameter, OR
+   - Provide S3 bucket name `s3_asset_bucket` and `s3_asset_prefix` parameters
+3. Initialize and apply Terraform:
+    ```
+    terraform init
+    terraform apply
+4. Access VS Code through the Terraform output URL provided
+5. Get your password from AWS Secrets Manager (link in outputs)
+6. Click *File* > *Open Folder* and navigate to `/home/ec2-user/my-workspace`. This is the git/S3 initialized project directory
+7. Test code in `dev`, copy to `release`, commit and push to trigger deployment
 
 
 ## Configuration Options
 
-| Parameter | Description |
-|-----------|-------------|
-| `CodeServerVersion` | Version of code-server to install |
-| `GitHubRepo` | Public repository to clone as initial workspace. Note: Using a custom repository will not include the sample application |
-| `S3AssetBucket` | (Optional) S3 bucket containing initial workspace content. Overwrites GitHubRepo if provided |
-| `S3AssetPrefix` | (Optional) S3 bucket asset prefix path. Only required when S3AssetBucket is specified. Needs to end with `/` |
-| `DeployPipeline` | Enable AWS CodePipeline deployments |
-| `RotateSecret` | Enable AWS Secrets Manager rotation |
-| `AutoSetDeveloperProfile` | Automatically set Developer profile as default in code-server terminal sessions without requiring manual elevation |
-| `InstanceType` | Supports both ARM and x86 Amazon EC2 instances |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `prefix_code` | Resource naming prefix | "devbox" |
+| `deploy_pipeline` | Enable AWS CodePipeline deployments | false |
+| `rotate_secret` | Enable AWS Secrets Manager rotation | false |
+| `code_server_version` | Version of code-server to install | "4.98.2" |
+| `github_repo` | Public repository to clone as initial workspace | "https://github.com/aws-samples/sample-developer-environment.git"
+| `s3_asset_bucket` | (Optional) S3 bucket containing initial workspace content | "" |
+| `s3_asset_prefix` | (Optional) S3 bucket asset prefix path (must end in '/') | "" |
+| `auto_set_developer_profile` | Set Developer profile as default in terminal sessions | false |
+| `instance_type` | EC2 instance type (supports ARM and x86) | false | "t4g.large" |
 
 ## AWS IAM Roles
 
@@ -61,13 +91,13 @@ The environment is configured with two IAM roles:
 1. EC2 instance role - Basic permissions for the instance
 2. Developer role - Elevated permissions for AWS operations
 
-The developer role has the permissions needed to deploy the sample application. To view or modify these permissions, search for "iamroledeveloper" in the CloudFormation template.
+The developer role has the permissions needed to deploy the sample application. To view or modify these permissions, edit `iam_developer_role.tf`.
 
 This separation ensures the EC2 instance runs with minimal permissions by default, while allowing controlled elevation of privileges when needed.
 
 ℹ️ **Tip**: Run `echo 'export AWS_PROFILE=developer' >> ~/.bashrc && source ~/.bashrc` to make the developer profile default for all terminal sessions.
 
-If you wish to have elevated AWS permissions automatically enabled in all new terminal sessions without requiring manual profile switching, set `AutoSetDeveloperProfile` to true. While convenient, this bypasses the security practice of explicit privilege elevation.
+If you wish to have elevated AWS permissions automatically enabled in all new terminal sessions without requiring manual profile switching, set `auto_set_developer_profile` to true. While convenient, this bypasses the security practice of explicit privilege elevation.
 
 ## Architecture
 

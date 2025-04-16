@@ -1,0 +1,16 @@
+region                     = "us-east-1"
+vpc_cidr_prefix            = "10.180"
+github_repo                = "https://github.com/aws-samples/sample-developer-environment.git"
+s3_asset_bucket            = "" # Optional
+s3_asset_prefix            = "" # Optional
+deploy_pipeline            = true
+rotate_secret              = true
+auto_set_developer_profile = true
+code_server_version        = "4.98.2"
+instance_architecture      = "arm64"
+instance_type              = "t4g.large"
+ami_x86_code_server        = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+ami_arm_code_server        = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64"
+prefix_code                = "tfdevbox"
+environment_tag            = "dev"
+solution_tag               = "DevPlatform"

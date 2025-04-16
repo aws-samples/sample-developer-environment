@@ -1,0 +1,18 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - yum install -y yum-utils
+      - yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+      - yum -y install terraform
+      - terraform --version
+  pre_build:
+    commands:
+      - cd release
+      - terraform init -backend-config="bucket=${bucket}" -backend-config="region=${region}"
+  build:
+    commands:
+      - terraform destroy -auto-approve -var="PrefixCode=${prefix_code}" -var="Region=${region}"
+  post_build:
+    commands:
+      - echo "Terraform destroy completed on $(date)"
