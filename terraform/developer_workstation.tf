@@ -269,7 +269,7 @@ resource "aws_route_table" "private" {
   }
 
   tags = {
-    Name         = "${var.prefix_code}-routetable-private1-${data.aws_availability_zones.available.names[0]}"
+    Name         = "${var.prefix_code}-routetable-private1"
     resourcetype = "network"
   }
 }
