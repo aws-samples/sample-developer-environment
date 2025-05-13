@@ -495,7 +495,7 @@ resource "aws_lb_target_group" "code_server" {
   target_type = "instance"
 
   health_check {
-    path = "/"
+    path = "/login"
     port = 8080
   }
 
