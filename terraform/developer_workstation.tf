@@ -144,7 +144,7 @@ resource "aws_iam_role_policy" "vpc_flow_logs" {
 }
 
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
-  name              = "/aws/events/${var.prefix_code}-vpcflowlog"
+  name              = "/aws/vpc/${var.prefix_code}-flowlog"
   retention_in_days = 30
   kms_key_id        = aws_kms_key.main.arn
 
@@ -925,7 +925,7 @@ resource "aws_ssm_parameter" "code_server_private_key" {
 }
 
 resource "aws_cloudwatch_log_group" "code_server" {
-  name              = "/aws/code-server/${var.prefix_code}"
+  name              = "/aws/ec2/${var.prefix_code}-codeserver"
   retention_in_days = 14
 
   tags = {

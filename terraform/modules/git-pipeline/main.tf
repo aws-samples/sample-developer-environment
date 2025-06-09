@@ -247,11 +247,11 @@ resource "aws_iam_role_policy" "eventbridge_logs" {
 }
 
 resource "aws_cloudwatch_log_group" "eventbridge" {
-  name              = "/aws/events/${local.pipeline_name}-trigger"
+  name              = "/aws/codepipeline/${var.prefix_code}-pipeline"
   retention_in_days = 14
 
   tags = {
-    Name         = "${local.pipeline_name}-trigger"
+    Name         = "${var.prefix_code}-pipelineloggroup"
     resourcetype = "monitoring"
   }
 }
