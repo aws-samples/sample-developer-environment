@@ -17,7 +17,6 @@ Metadata:
           - DeployPipeline
           - RotateSecret
           - AutoSetDeveloperProfile
-          - InstallDotNet
       - Label:
           default: Compute settings
         Parameters:
@@ -69,13 +68,6 @@ Parameters:
       - true
       - false
     Description: Automatically set Developer profile as default in code-server terminal sessions without requiring elevation
-  InstallDotNet:
-    Type: String
-    Default: false
-    Description: "Install .NET SDK"
-    AllowedValues:
-      - true
-      - false
   CodeServerVersion:
     Type: String
     Default: "4.99.3"
@@ -1224,97 +1216,152 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          # This script sets up a persistent boot script using cloud-init
 
-          echo "INFO: Starting bootstrap process at $(date)"
-
-          # Define all variables
-          ENV_FILE="/etc/devbox-env.sh" # Environment variables file
-          STATUS_FILE="/var/lib/cloud/instance/setup-status.log" # Installation status tracking file
-          GITHUB_RAW_URL="https://raw.githubusercontent.com/aws-samples/sample-developer-environment/refs/heads/main/devbox-setup.sh" # URL to download setup script
-          SETUP_SCRIPT="/var/lib/cloud/scripts/per-boot/setup.sh" # Location of the setup script (runs on every boot)
-          SETUP_LOG="/var/log/devbox-setup.log" # Log file for setup script output
-
-          # Create environment file with all necessary variables
-          cat > $ENV_FILE << EOF
-          # Environment variables for setup
-
-          # Package version variables
-          export BOTO3_VERSION="1.37.18"
-          export UV_PYTHON_VERSION="3.13"
-          export MCP_PYTHON_VERSION="3.13"
-          export UV_VERSION="latest"
-          # might not need below line
-          export UVENV_VERSION="latest"
-          export GIT_REMOTE_S3_VERSION="latest"
-          export DOTNET_VERSION="8.0"
-
-          # Variables from CloudFormation template
-          export AWS_ACCOUNT_ID="${AWS::AccountId}"
-          export AWS_REGION="${AWS::Region}"
-          export PREFIX_CODE="${PrefixCode}"
-          export S3_BUCKET_GIT="${s3bucketgit}"
-          export INSTANCE_ARCHITECTURE="${InstanceArchitecture}"
-          export CODE_SERVER_VERSION="${CodeServerVersion}"
-          export GITHUB_REPO="${GitHubRepo}"
-          export AUTO_SET_DEVELOPER_PROFILE="${AutoSetDeveloperProfile}"
-          export S3_ASSET_BUCKET="${S3AssetBucket}"
-          export S3_ASSET_PREFIX="${S3AssetPrefix}"
-          export SECRET_CODE_SERVER="${secretcodeserver}"
-          export INSTALL_DOTNET="${InstallDotNet}"
-          EOF
-
-          # Make it readable by everyone but only writable by root
-          chmod 644 $ENV_FILE
-
-          # Wait for SSM agent initialization
           echo "INFO: Waiting for SSM agent initialization..."
           until systemctl is-active --quiet amazon-ssm-agent; do
             echo "INFO: SSM agent is not ready..."
             systemctl status amazon-ssm-agent
             sleep 5
           done
+          echo "INFO: Installing packages including CloudWatch agent"
+          dnf update -y -q
+          dnf install amazon-cloudwatch-agent -y -q
 
-          # Initialize status tracking file
-          touch $STATUS_FILE
+          echo "INFO: Configuring CloudWatch agent..."
+          until aws ssm get-parameter --name /${PrefixCode}/config/AmazonCloudWatch-linux --region ${AWS::Region} &> /dev/null; do
+            echo "INFO: SSM parameter is not ready..."
+            sleep 5
+          done
+          aws ssm get-parameter --name /${PrefixCode}/config/AmazonCloudWatch-linux --region ${AWS::Region} --query "Parameter.Value" --output text > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+          /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
 
-          # Download the setup script from GitHub and place it in per-boot directory
-          echo "INFO: Downloading setup script from GitHub"
-          curl -s -o $SETUP_SCRIPT $GITHUB_RAW_URL
-          chmod +x $SETUP_SCRIPT
+          echo "INFO: Creating AWS profile for developer role..."
+          su - ec2-user -c "mkdir -p ~/.aws"
+          su - ec2-user -c "cat > ~/.aws/config << EOF
+          [profile developer]
+          role_arn = arn:aws:iam::${AWS::AccountId}:role/${PrefixCode}-iamrole-developer
+          credential_source = Ec2InstanceMetadata
+          region = ${AWS::Region}
+          EOF"
 
-          # Run the setup script for the first time
-          echo "INFO: Running initial setup"
-          source $ENV_FILE
-          $SETUP_SCRIPT
-          SETUP_EXIT_CODE=$?
+          #### START: CODE-SERVER BOOTSTRAP ####
+          echo "INFO: Installing code-server version ${CodeServerVersion}..."
+          dnf install https://github.com/coder/code-server/releases/download/v${CodeServerVersion}/code-server-${CodeServerVersion}-${InstanceArchitecture}.rpm -y
 
-          # Report setup status
-          if [ $SETUP_EXIT_CODE -eq 0 ]; then
-            echo "INFO: Setup completed successfully"
+          echo "INFO: Configuring code-server"
+          mkdir -p /home/ec2-user/.config/code-server
+          mkdir -p /home/ec2-user/workspace
+          chown -R ec2-user:ec2-user /home/ec2-user/workspace
+
+          cat > /home/ec2-user/.config/code-server/config.yaml << EOF
+          bind-addr: 0.0.0.0:8080
+          auth: password
+          password: "$(aws secretsmanager get-secret-value --secret-id ${secretcodeserver} --region ${AWS::Region} --query SecretString --output text | jq -r .password)"
+          cert: false
+          EOF
+
+          chmod 600 /home/ec2-user/.config/code-server/config.yaml
+          chown -R ec2-user:ec2-user /home/ec2-user/.config
+
+          cat > /etc/systemd/system/code-server.service << EOF
+          [Unit]
+          Description=code-server
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=ec2-user
+          Environment=HOME=/home/ec2-user
+          WorkingDirectory=/home/ec2-user/workspace
+          ExecStart=/usr/bin/code-server --config /home/ec2-user/.config/code-server/config.yaml
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+          echo "INFO: Configuring code-server workspace interface..."
+          mkdir -p /home/ec2-user/.local/share/code-server/User/
+          cat >> /home/ec2-user/.local/share/code-server/User/settings.json << EOF
+          {
+            "git.enabled": true,
+            "git.path": "/usr/bin/git",
+            "git.autofetch": true,
+            "window.menuBarVisibility": "classic",
+            "workbench.startupEditor": "none",
+            "workspace.openFilesInNewWindow": "off",
+            "workbench.colorTheme": "Default Dark+"
+          }
+          EOF
+          chown -R ec2-user:ec2-user /home/ec2-user/.local
+
+          echo "INFO: Installing Terraform..."
+          dnf config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+          dnf install -y terraform
+
+          echo "INFO: Installing Docker..."
+          dnf install -y docker
+          systemctl start docker
+          systemctl enable docker
+          usermod -aG docker ec2-user
+
+          echo "INFO: Installing extensions..."
+          su - ec2-user -c "code-server --install-extension amazonwebservices.amazon-q-vscode --force"
+          su - ec2-user -c "code-server --install-extension amazonwebservices.aws-toolkit-vscode --force"
+          su - ec2-user -c "code-server --install-extension hashicorp.terraform --force"
+          su - ec2-user -c "code-server --install-extension ms-azuretools.vscode-docker --force"
+
+          echo "INFO: Starting code-server service..."
+          systemctl enable code-server
+          systemctl start code-server
+          #### END: CODE-SERVER BOOTSTRAP ####
+
+          #### START: GIT-REMOTE-S3 BOOTSTRAP ####
+          echo "INFO: Installing git-remote-s3..."
+          dnf install git -y -q
+          dnf install -y python3 python3-pip
+          pip3 install boto3==1.37.18
+          pip3 install git-remote-s3
+
+          # Initialize git repo as ec2-user
+          echo "INFO: Configuring git..."
+          su - ec2-user -c "git config --global user.name 'EC2 User'"
+          su - ec2-user -c "git config --global user.email 'ec2-user@example.com'"
+          su - ec2-user -c "git config --global init.defaultBranch main"
+
+          # Initialize from either S3 or GitHub
+          if [ -n "${S3AssetBucket}" ]; then
+            echo "INFO: Initializing from S3 assets..."
+            su - ec2-user -c "mkdir -p /home/ec2-user/workspace/my-workspace && \
+                              cd /home/ec2-user/workspace/my-workspace && \
+                              aws s3 cp --recursive s3://${S3AssetBucket}/${S3AssetPrefix} ./ && \
+                              git init && \
+                              git add . && \
+                              git commit -m 'Initial commit from S3 assets' && \
+                              git remote add origin s3+zip://${s3bucketgit}/my-workspace && \
+                              git push -u origin main"
           else
-            echo "ERROR: Setup failed with exit code $SETUP_EXIT_CODE"
-            echo "ERROR: Check $STATUS_FILE for details"
+            echo "INFO: Cloning from GitHub..."
+            su - ec2-user -c "cd /home/ec2-user/workspace && \
+                              git clone ${GitHubRepo} my-workspace && \
+                              cd my-workspace && \
+                              git remote remove origin && \
+                              git remote add origin s3+zip://${s3bucketgit}/my-workspace && \
+                              git push -u origin main"
           fi
+          #### END: GIT-REMOTE-S3 BOOTSTRAP ####
 
-          # Failsafe command
-          echo ""
-          echo "=================================================================="
-          echo "FAILSAFE COMMAND:"
-          echo "To manually download and run the latest setup script, execute:"
-          echo "sudo bash -c 'curl -s https://raw.githubusercontent.com/hansmohob/wildlife/refs/heads/main/workshop/devbox-setup.sh -o /tmp/setup.sh && chmod +x /tmp/setup.sh && source /etc/devbox-env.sh && /tmp/setup.sh'"
-          echo "=================================================================="
-          echo ""
+          #### START: SET DEVELOPER PROFILE AS DEFAULT ####
+          if [ "${AutoSetDeveloperProfile}" = "true" ]; then
+            echo "INFO: Setting up AWS profile defaults..."
+            su - ec2-user -c "echo 'export AWS_PROFILE=developer' >> ~/.bashrc"
+            su - ec2-user -c "echo 'export AWS_REGION=${AWS::Region}' >> ~/.bashrc"
+            su - ec2-user -c "echo 'export AWS_ACCOUNTID=${AWS::AccountId}' >> ~/.bashrc"
+          else
+            echo "INFO: Skipping AWS profile defaults..."
+          fi
+          #### END: SET DEVELOPER PROFILE AS DEFAULT ####
 
-          # Display important file locations
-          echo "INFO: Important file locations:"
-          echo "- Environment file: $ENV_FILE"
-          echo "- Setup script: $SETUP_SCRIPT"
-          echo "- Status file: $STATUS_FILE"
-          echo "- Setup log: $SETUP_LOG"
-
-          echo "INFO: Bootstrap process completed at $(date)"
-          exit $SETUP_EXIT_CODE
       Tags:
         - Key: Name
           Value: !Sub ${PrefixCode}-ec2-codeserver
