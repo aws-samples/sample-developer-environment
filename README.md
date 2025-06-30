@@ -2,17 +2,11 @@
 
 This solution deploys a complete browser-based development environment with VS Code, version control, and automated deployments using a single AWS CloudFormation template.
 
-> 🚀 Now includes [Amazon Q CLI](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/command-line.html) preconfiguration!
-
-> A **preview** Terraform implementation is also available in the [terraform branch](../../tree/terraform). This has not been updated to the latest version yet.
-
 ## Quick Navigation
 - [Repository Structure](#repository-structure)
 - [Key Features](#key-features)
 - [Quick Start](#quick-start)
 - [Configuration Options](#configuration-options)
-- [Useful File locations](#useful-file-locations)
-- [Amazon Q CLI Setup](#amazon-q-cli-setup)
 - [AWS IAM Roles](#aws-iam-roles)
 - [Architecture](#architecture)
 - [Sample Application](#sample-application)
@@ -33,7 +27,6 @@ This solution deploys a complete browser-based development environment with VS C
 │   ├── versions.tf                   # Provider versions and backend
 │   ├── website.tf                    # Sample static website
 │   └── terraform.tfvars              # Variable defaults
-│── devbox-setup.sh                   # EC2 Bootstrap script
 └── sample-developer-environment.yml  # Main CloudFormation template
 ```
 
@@ -72,34 +65,8 @@ This solution deploys a complete browser-based development environment with VS C
 | `DeployPipeline` | Enable AWS CodePipeline deployments |
 | `RotateSecret` | Enable AWS Secrets Manager rotation |
 | `AutoSetDeveloperProfile` | Automatically set Developer profile as default in code-server terminal sessions without requiring manual elevation |
-| `InstallDotNet` | Install .NET SDK  |
 | `InstanceArchitecture` | Choose between ARM and x86 architecture |
 | `InstanceType` | Pick Amazon EC2 instance type |
-
-## Useful File Locations
-
-Here are some handy files you'll find on the EC2 instance:
-
-| File | Description |
-|------|-------------|
-| `/etc/devbox-env.sh` | Environment variables file |
-| `/var/lib/cloud/instance/setup-status.log` | Installation status tracking file |
-| `/var/lib/cloud/scripts/per-boot/setup.sh` | Setup script location (runs on every boot) |
-| `/var/log/devbox-setup.log` | Log file for setup script output |
-
-## Amazon Q CLI Setup
-
-1. Follow the [Amazon Q Developer Getting Started guide](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/getting-started.html) - choose Free/Pro tier and authentication method
-2. Run `./install.sh` and follow prompts
-
-    ![Amazon Q Setup](img/qsetup.png)
-
-3. Navigate to workspace: `cd /home/ec2-user/workspace/my-workspace`
-4. Start with `q chat`
-5. Use `/model` to select AI model, `/tools` to see available MCP tools
-6. Browse [AWS Labs MCP](https://github.com/awslabs/mcp) for additional MCP servers
-7. Add more tools by editing `/home/ec2-user/workspace/my-workspace/.amazonq/mcp.json`
-8. Use Amazon Q CLI to accelerate your development 🚀
 
 ## AWS IAM Roles
 
