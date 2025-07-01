@@ -59,17 +59,14 @@
       "disabled": false,
       "autoApprove": []
     },
-    "awslabs.terraform-mcp-server": {
-      "command": "uvenv",
+    "hashicorp.terraform-mcp-server": {
+      "command": "docker",
       "args": [
         "run",
-        "--python",
-        "3.13",
-        "awslabs.terraform-mcp-server"
+        "-i",
+        "--rm",
+        "hashicorp/terraform-mcp-server"
       ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      },
       "disabled": false,
       "autoApprove": []
     }
