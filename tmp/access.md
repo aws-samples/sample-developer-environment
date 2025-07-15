@@ -11,11 +11,19 @@ To access your AWS account follow the instructions below. Five attendees can acc
 
     ![Workshop Studio sign in](/tmp/img/wssignin.png)
 
-3. Enter your email address and click **Send passcode**, which will send a one-time passcode to your inbox. When the email arrives you can enter the passcode and log-in
+3. Enter your email address and click **Send passcode**. When the email arrives you can enter the passcode and log-in
+
+<p>
 
 4. Your instructor will provide you with an **event access code**. Enter the provided hash into the text box and click **Next**
 
-5. In the AWS Console, browse to CloudFormation
+<p>
+
+5. Once you have accessed Workshop studio, click **Open AWS console** to access your dedicated AWS account.
+
+    ![Access AWS Account](/tmp/img/access-account.png)
+
+5. In the AWS Console, browse to **CloudFormation**
 
     ![browse to CloudFormation](/tmp/img/browse-cloudformation.png)
 
@@ -35,7 +43,7 @@ To access your AWS account follow the instructions below. Five attendees can acc
 
     ![accept code-server trust message](/tmp/img/trust-authors.png) 
 
-10. The Explorer pane will show workshop related files. Open a terminal by selecting **Terminal** from the top menu, then click **New Terminal**
+10. The Explorer pane will show a git repository. Open a terminal by selecting **Terminal** from the top menu, then click **New Terminal**
 
     ![code-server terminal layout](/tmp/img/terminal-layout.png)
 
