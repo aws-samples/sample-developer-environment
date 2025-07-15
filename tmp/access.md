@@ -19,7 +19,7 @@ To access your AWS account follow the instructions below. Five attendees can acc
 
 <p>
 
-5. Once you have accessed Workshop studio, click **Open AWS console** to access your dedicated AWS account.
+5. Click **Open AWS console** to access your dedicated AWS account.
 
     ![Access AWS Account](/tmp/img/access-account.png)
 
