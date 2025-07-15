@@ -1,7 +1,5 @@
----
-title : "Workshop Studio Access Instructions"
-weight : 10
----
+
+# Workshop Studio Access Instructions
 
 To access your AWS account follow the instructions below. Five attendees can access each AWS event.
 
