@@ -171,7 +171,19 @@ cat > /home/ec2-user/.local/share/code-server/User/settings.json << EOF
   "window.menuBarVisibility": "classic",
   "workbench.startupEditor": "none",
   "workspace.openFilesInNewWindow": "off",
-  "workbench.colorTheme": "Default Dark+"
+  "workbench.colorTheme": "Default Dark+",
+  "extensions.autoUpdate": false,
+  "extensions.autoCheckUpdates": false,
+  "telemetry.telemetryLevel": "off",
+  "security.workspace.trust.startupPrompt": "never",
+  "security.workspace.trust.enabled": false,
+  "security.workspace.trust.banner": "never",
+  "security.workspace.trust.emptyWindow": false,
+  "auto-run-command.rules": [
+    {
+      "command": "workbench.action.terminal.new"
+    }
+  ]
 }
 EOF
 
