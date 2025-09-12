@@ -51,26 +51,28 @@ To access your AWS account follow the instructions below. Five attendees can acc
 
 <p>
 
-12. Start Amazon Q Developer CLI with `q chat`
+12. Set the default agent: `q settings chat.defaultAgent platform-engineer`
+
+13. Start Amazon Q Developer CLI with `q chat -a`
 
 <p>
 
-13. Use `/model` to select AI model, `/tools` to see available MCP tools
+14. Use `/model` to select AI model, `/tools` to see available MCP tools
 
 <p>
 
-14. Use Amazon Q CLI to accelerate your development 🚀
+15. Use Amazon Q CLI to accelerate your development 🚀
 
 <p>
 
-15. Learn about development environment features [here](https://github.com/aws-samples/sample-developer-environment)
+16. Learn about development environment features [here](https://github.com/aws-samples/sample-developer-environment)
 
 <p>
 
-16. Browse [AWS Labs MCP](https://github.com/awslabs/mcp) for additional MCP servers
+17. Browse [AWS Labs MCP](https://github.com/awslabs/mcp) for additional MCP servers
 
 <p>
 
-17. Add more tools by editing `/home/ec2-user/workspace/my-workspace/.amazonq/mcp.json`
+18. Add more tools by editing `/home/ec2-user/workspace/my-workspace/.amazonq/mcp.json`
 
 > *Note: Don't worry if you accidentally close your browser - when you log back in, everything will be right where you left it.*
