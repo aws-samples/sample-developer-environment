@@ -79,6 +79,18 @@
       "env": {
         "FASTMCP_LOG_LEVEL": "ERROR"
       }
+    },
+    "awslabs.aws-pricing-mcp-server": {
+      "command": "uvenv",
+      "args": [
+        "run",
+        "--python",
+        "3.13",
+        "awslabs.aws-pricing-mcp-server"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      }
     }
   }
 }

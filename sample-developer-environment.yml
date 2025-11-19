@@ -78,7 +78,7 @@ Parameters:
       - false
   CodeServerVersion:
     Type: String
-    Default: "4.99.3"
+    Default: "4.105.1"
     Description: Version of code-server to install. See available versions at github.com/coder/code-server/releases
   InstanceArchitecture:
     Type: String

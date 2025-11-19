@@ -297,13 +297,10 @@ fi
 
 # Initial Amazon Q CLI setup only - final configuration needed
 install_component "q_cli_prerequisites" '
-ARCH=$(detect_architecture)
-# Download and install Q CLI
-su - ec2-user -c "curl --proto \"=https\" --tlsv1.2 -sSf https://desktop-release.q.us-east-1.amazonaws.com/latest/q-${ARCH}-linux.zip -o /tmp/q.zip"
-cd /tmp
-unzip -o q.zip
-mv /tmp/q/* /usr/local/bin/
-chmod +x /usr/local/bin/q
+# Download and install Kiro CLI
+curl -fsSL https://cli.kiro.dev/install -o /tmp/install-kiro-cli.sh
+chown ec2-user:ec2-user /tmp/install-kiro-cli.sh
+sudo -u ec2-user bash /tmp/install-kiro-cli.sh
 
 # Install other prerequisites
 if [ "${UV_VERSION}" = "latest" ]; then

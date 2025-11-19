@@ -1,0 +1,41 @@
+# Changes Log - Kiro CLI Migration
+
+## 2025-11-19
+
+### devbox-setup.sh
+- Updated Kiro CLI installation method
+- Replaced architecture-specific download from `https://desktop-release.q.us-east-1.amazonaws.com/latest/q-${ARCH}-linux.zip`
+- Changed to universal installation script from `https://cli.kiro.dev/install`
+- Removed manual unzip and file movement steps
+- Installation now handled automatically by the Kiro CLI install script
+
+### README.md
+- Updated main callout to reference "Kiro CLI" with link to https://kiro.dev/docs/
+- Changed navigation link from "Amazon Q CLI Setup" to "Kiro CLI Setup"
+- Updated section header to "Kiro CLI Setup"
+- Changed authentication instruction from `install.sh` to `kiro-cli login --use-device-flow`
+- Updated settings command from `q settings` to `kiro-cli settings`
+- Updated final reference from "Amazon Q CLI" to "Kiro CLI"
+
+### MCP Server Configurations
+- Added `awslabs.aws-pricing-mcp-server` to `.amazonq/cli-agents/platform-engineer.json`
+- Added `awslabs.aws-pricing-mcp-server` to `.amazonq/cli-agents/data-engineer.json`
+- **IMPORTANT**: MCP configuration directory changed from `.amazonq/cli-agents/` to `.kiro/agents/`
+- Created new `.kiro/agents/` directory with updated agent configurations
+- Both agents now have access to AWS pricing tools for cost analysis
+
+## Pending Changes
+- Need to test if MCP configuration directory changes from `.amazonq/` to `.kiro/` or similar
+- May need to update authentication method documentation once tested
+- CloudFormation template description may need Kiro CLI reference update
+
+## Test Results (2025-11-19)
+- Kiro CLI installation script works successfully
+- `kiro-cli` command available immediately after installation
+- `q` command requires `~/.local/bin` to be in PATH
+- Installation script provides appropriate PATH instructions to users
+- **Authentication command**: `kiro-cli login --use-device-flow` (not `q auth --use-device-flow`)
+- Provides choice between Builder ID and IDC Account
+- **Authentication experience changed**: Previously Q CLI auto-created IAM IDC users, now requires manual IAM IDC user creation
+- **Authentication successful** after creating IAM IDC user and enabling Kiro
+- **MCP servers don't load** - configuration directory may have changed from `.amazonq/`

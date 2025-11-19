@@ -2,9 +2,7 @@
 
 This solution deploys a complete browser-based development environment with VS Code, version control, and automated deployments using a single AWS CloudFormation template.
 
-> 🚀 Now includes [Amazon Q CLI](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/command-line.html) preconfiguration!
-
-> A **preview** Terraform implementation is also available in the [terraform branch](../../tree/terraform). This has not been updated to the latest version yet.
+> 🚀 Now includes [Kiro CLI](https://kiro.dev/docs/) preconfiguration!
 
 ## Quick Navigation
 - [Repository Structure](#repository-structure)
@@ -12,7 +10,7 @@ This solution deploys a complete browser-based development environment with VS C
 - [Quick Start](#quick-start)
 - [Configuration Options](#configuration-options)
 - [Useful File locations](#useful-file-locations)
-- [Amazon Q CLI Setup](#amazon-q-cli-setup)
+- [Kiro CLI Setup](#kiro-cli-setup)
 - [AWS IAM Roles](#aws-iam-roles)
 - [Architecture](#architecture)
 - [Sample Application](#sample-application)
@@ -41,6 +39,7 @@ This solution deploys a complete browser-based development environment with VS C
 
 ## Key Features
 
+- 
 - Browser-based VS Code using [code-server](https://github.com/coder/code-server) accessed through Amazon CloudFront
 - Git version control using [git-remote-s3](https://github.com/awslabs/git-remote-s3) with Amazon S3 storage
 - Automated deployments using AWS CodePipeline and AWS CodeBuild
@@ -89,20 +88,22 @@ Here are some handy files you'll find on the EC2 instance:
 | `/var/lib/cloud/scripts/per-boot/setup.sh` | Setup script location (runs on every boot) |
 | `/var/log/devbox-setup.log` | Log file for setup script output |
 
-## Amazon Q CLI Setup
+## Kiro CLI Setup
 
-1. Follow the [Amazon Q Developer Getting Started guide](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/getting-started.html) - choose Free/Pro tier and authentication method
-2. Run `install.sh` and follow prompts
+1. [Enable IAM Identity Center](https://docs.aws.amazon.com/singlesignon/latest/userguide/confirm-identity-source.html) if you haven't already
+2. [Create an IAM Identity Center user](https://docs.aws.amazon.com/singlesignon/latest/userguide/addusers.html) if needed
+3. Follow the [Subscribing your team to Kiro](https://kiro.dev/docs/enterprise/subscribe/) guide
+4. Run `kiro-cli login --use-device-flow` and follow prompts for headless authentication
 
-    ![Amazon Q Setup](img/qsetup.png)
+    ![Kiro Setup](img/qsetup.png)
 
-3. Navigate to workspace: `cd /home/ec2-user/workspace/my-workspace`
-4. (optional) Set the default agent: `q settings chat.defaultAgent platform-engineer`
-5. Start with `q chat` or `q chat --agent platform-engineer`
-6. Use `/model` to select AI model, `/tools` to see available MCP tools
+5. Navigate to workspace: `cd /home/ec2-user/workspace/my-workspace`
+6. (optional) Set the default agent: `kiro-cli settings chat.defaultAgent platform-engineer`
+7. Start with `kiro-cli` or `kiro-cli --agent platform-engineer`
+8. Use `/model` to select AI model, `/tools` to see available MCP tools
 7. Browse [AWS Labs MCP](https://github.com/awslabs/mcp) for additional MCP servers
-8. Create additional agents by adding new files to `.amazonq/cli-agents/`
-9. Use Amazon Q CLI to accelerate your development 🚀
+8. Create additional agents by adding new files to `.kiro/agents/`
+9. Use Kiro CLI to accelerate your development 🚀
 
 ## AWS IAM Roles
 
