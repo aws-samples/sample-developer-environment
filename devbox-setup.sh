@@ -295,8 +295,8 @@ if [ "${AUTO_SET_DEVELOPER_PROFILE}" = "true" ] && ! step_completed "developer_p
     ' "Failed to set AWS profile defaults"
 fi
 
-# Initial Amazon Q CLI setup only - final configuration needed
-install_component "q_cli_prerequisites" '
+# Kiro installation
+install_component "Kiro CLI" '
 # Download and install Kiro CLI
 curl -fsSL https://cli.kiro.dev/install -o /tmp/install-kiro-cli.sh
 chown ec2-user:ec2-user /tmp/install-kiro-cli.sh
@@ -321,8 +321,7 @@ uvenv install --python ${MCP_PYTHON_VERSION} awslabs.ecs-mcp-server
 uvenv install --python ${MCP_PYTHON_VERSION} awslabs.eks-mcp-server
 uvenv install --python ${MCP_PYTHON_VERSION} awslabs.core-mcp-server
 uvenv install --python ${MCP_PYTHON_VERSION} awslabs.aws-documentation-mcp-server
-echo "NOTE: To complete Q CLI setup, see README instructions"
-' "Failed to set up Amazon Q CLI prerequisites"
+' "Failed to set up Kiro prerequisites"
 
 # Install Session Manager plugin for ECS Exec
 install_component "session_manager_plugin_installed" '
