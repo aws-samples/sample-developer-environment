@@ -39,7 +39,6 @@ This solution deploys a complete browser-based development environment with VS C
 
 ## Key Features
 
-- 
 - Browser-based VS Code using [code-server](https://github.com/coder/code-server) accessed through Amazon CloudFront
 - Git version control using [git-remote-s3](https://github.com/awslabs/git-remote-s3) with Amazon S3 storage
 - Automated deployments using AWS CodePipeline and AWS CodeBuild
