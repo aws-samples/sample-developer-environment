@@ -294,6 +294,11 @@ if [ "${AUTO_SET_DEVELOPER_PROFILE}" = "true" ] && ! step_completed "developer_p
     ' "Failed to set AWS profile defaults"
 fi
 
+# Install build tools for MCP servers with C extensions
+install_component "build_tools_" '
+dnf install -y gcc python3-devel
+' "Failed to install build tools"
+
 # Kiro installation
 install_component "Kiro CLI" '
 # Download and install Kiro CLI
