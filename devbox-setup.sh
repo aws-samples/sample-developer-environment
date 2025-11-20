@@ -215,7 +215,6 @@ usermod -aG docker ec2-user
 
 # Install VS Code extensions
 install_component "extensions_installed" '
-su - ec2-user -c "code-server --install-extension amazonwebservices.amazon-q-vscode --force"
 su - ec2-user -c "code-server --install-extension amazonwebservices.aws-toolkit-vscode --force"
 su - ec2-user -c "code-server --install-extension hashicorp.terraform --force"
 su - ec2-user -c "code-server --install-extension ms-azuretools.vscode-docker --force"
