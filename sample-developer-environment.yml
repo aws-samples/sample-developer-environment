@@ -12,6 +12,7 @@ Metadata:
         Parameters:
           - CodeServerVersion
           - GitHubRepo
+          - GitHubBranch
           - S3AssetBucket
           - S3AssetPrefix
           - DeployPipeline
