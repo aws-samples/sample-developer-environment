@@ -299,7 +299,7 @@ install_component "build_tools_" '
 dnf install -y gcc python3-devel
 ' "Failed to install build tools"
 
-# Kiro installation
+# Kiro CLI installation
 install_component "Kiro CLI" '
 # Download and install Kiro CLI
 curl -fsSL https://cli.kiro.dev/install -o /tmp/install-kiro-cli.sh
@@ -326,6 +326,71 @@ uvenv install --python ${MCP_PYTHON_VERSION} awslabs.eks-mcp-server
 uvenv install --python ${MCP_PYTHON_VERSION} awslabs.core-mcp-server
 uvenv install --python ${MCP_PYTHON_VERSION} awslabs.aws-documentation-mcp-server
 ' "Failed to set up Kiro prerequisites"
+
+# Kiro IDE Installation
+if [ "${ENABLE_KIRO_IDE}" = "true" ] && [ "${INSTANCE_ARCHITECTURE}" = "amd64" ]; then
+    # Install GNOME Desktop
+    install_component "desktop_installed" '
+    dnf groupinstall -y "Desktop"
+    dnf upgrade -y
+    systemctl set-default graphical.target
+    mkdir -p /home/ec2-user/.config
+    touch /home/ec2-user/.config/gnome-initial-setup-done
+    chown -R ec2-user:ec2-user /home/ec2-user/.config
+    ' "Failed to install desktop environment"
+
+    # Install NICE DCV
+    install_component "nice_dcv_installed" '
+    dnf install -y nice-dcv-server nice-dcv-web-viewer
+    cat > /etc/dcv/dcv.conf << EOF
+[license]
+[log]
+level=info
+[session-management]
+create-session=true
+[session-management/defaults]
+[session-management/automatic-console-session]
+owner=ec2-user
+[display]
+[connectivity]
+enable-quic-frontend=true
+[security]
+authentication=system
+EOF
+    systemctl enable dcvserver
+    systemctl start dcvserver
+    dcv create-session --owner ec2-user --type console ec2-user-session
+    ' "Failed to install NICE DCV"
+
+    # Install Kiro IDE
+    install_component "kiro_ide_installed" '
+    ARCH=$(detect_architecture)
+    if [ "$ARCH" != "x86_64" ]; then
+        echo "ERROR: Kiro IDE requires amd64 architecture. Current: $ARCH"
+        exit 1
+    fi
+    VERSION=$(curl -s https://prod.download.desktop.kiro.dev/stable/metadata-linux-x64-stable.json | jq -r .currentRelease)
+    curl -o /tmp/kiro-ide.tar.gz "https://prod.download.desktop.kiro.dev/releases/stable/linux-x64/signed/$VERSION/tar/kiro-ide-$VERSION-stable-linux-x64.tar.gz"
+    tar -xzf /tmp/kiro-ide.tar.gz -C /opt/
+    rm /tmp/kiro-ide.tar.gz
+    mkdir -p /home/ec2-user/Desktop
+    cat > /home/ec2-user/Desktop/kiro-ide.desktop << EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Kiro IDE
+Exec=/opt/kiro-ide/kiro-ide
+Icon=/opt/kiro-ide/resources/app/icon.png
+Terminal=false
+Categories=Development;IDE;
+EOF
+    chmod +x /home/ec2-user/Desktop/kiro-ide.desktop
+    chown -R ec2-user:ec2-user /home/ec2-user/Desktop
+    chown -R ec2-user:ec2-user /opt/kiro-ide
+    ' "Failed to install Kiro IDE"
+elif [ "${ENABLE_KIRO_IDE}" = "true" ]; then
+    echo "WARNING: Kiro IDE requires amd64 architecture. Skipping Kiro IDE installation."
+fi
 
 # Install Session Manager plugin for ECS Exec
 install_component "session_manager_plugin_installed" '
