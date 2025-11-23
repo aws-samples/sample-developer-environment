@@ -19,7 +19,6 @@ Metadata:
           - RotateSecret
           - AutoSetDeveloperProfile
           - InstallDotNet
-          - EnableKiroIDE
       - Label:
           default: Compute settings
         Parameters:
@@ -79,13 +78,6 @@ Parameters:
     Type: String
     Default: false
     Description: "Install .NET SDK"
-    AllowedValues:
-      - true
-      - false
-  EnableKiroIDE:
-    Type: String
-    Default: false
-    Description: "Enable Kiro IDE with NICE DCV remote desktop (requires amd64 architecture)"
     AllowedValues:
       - true
       - false
@@ -181,23 +173,11 @@ Mappings:
       CloudFrontPrefixList: pl-82a045eb
       ALBAccount: 797873946194
 
-Rules:
-  KiroIDEArchitectureCheck:
-    RuleCondition: !Equals [!Ref EnableKiroIDE, "true"]
-    Assertions:
-      - Assert: !Equals [!Ref InstanceArchitecture, "amd64"]
-        AssertDescription: "Kiro IDE requires amd64 architecture. Please select an amd64 instance type or disable Kiro IDE."
-
 Conditions:
   CreatePipeline: !Equals [!Ref DeployPipeline, "true"]
   EnableRotation: !Equals [!Ref RotateSecret, "true"]
   IsArm64: !Equals [!Ref InstanceArchitecture, 'arm64']
-  IsAmd64: !Equals [!Ref InstanceArchitecture, "amd64"]
   HasS3Assets: !Not [!Equals [!Ref S3AssetBucket, ""]]
-  EnableKiroIDE: !Equals [!Ref EnableKiroIDE, "true"]
-  InstallKiroIDE: !And
-    - !Condition EnableKiroIDE
-    - !Condition IsAmd64
 
 Resources:
   ### Resource Group - Groups all AWS resources for easy management and tracking
@@ -747,31 +727,6 @@ Resources:
           Value: network
         - Key: environment
           Value: !Sub ${EnvironmentTag}
-  albtargetgroupdcv:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Condition: InstallKiroIDE
-    Properties:
-      HealthCheckPath: /
-      HealthCheckPort: 8443
-      HealthCheckProtocol: HTTPS
-      Name: !Sub ${PrefixCode}-targetgroup-dcv
-      Port: 8443
-      Protocol: HTTPS
-      TargetType: instance
-      Targets:
-        - Id: !Ref ec2codeserver
-      VpcId: !Ref vpc01
-      Tags:
-        - Key: Name
-          Value: !Sub ${PrefixCode}-targetgroup-dcv
-        - Key: provisioner
-          Value: CFN
-        - Key: solution
-          Value: !Sub ${SolutionTag}
-        - Key: resourcetype
-          Value: network
-        - Key: environment
-          Value: !Sub ${EnvironmentTag}
   # ALB listener default rule blocks all traffic unless coming from CloudFront with correct secret header
   alblistenercodeserver:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -813,25 +768,6 @@ Resources:
               - !Sub "{{resolve:secretsmanager:${cloudfrontsecretheadercodeserver}:SecretString:HeaderValue}}"
       ListenerArn: !Ref alblistenercodeserver
       Priority: 10
-  alblistenerruledcv:
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Condition: InstallKiroIDE
-    Properties:
-      Actions:
-        - Type: forward
-          TargetGroupArn: !Ref albtargetgroupdcv
-      Conditions:
-        - Field: http-header
-          HttpHeaderConfig:
-            HttpHeaderName: !Sub "{{resolve:secretsmanager:${cloudfrontsecretheadercodeserver}:SecretString:HeaderName}}"
-            Values:
-              - !Sub "{{resolve:secretsmanager:${cloudfrontsecretheadercodeserver}:SecretString:HeaderValue}}"
-        - Field: path-pattern
-          PathPatternConfig:
-            Values:
-              - "/dcv*"
-      ListenerArn: !Ref alblistenercodeserver
-      Priority: 5
   # Security group allows traffic only from CloudFront IP ranges
   securitygroupalb:
     Type: AWS::EC2::SecurityGroup
@@ -912,23 +848,6 @@ Resources:
           OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3  # Managed AllViewer Policy
           TargetOriginId: CodeServerOrigin
           ViewerProtocolPolicy: redirect-to-https
-        CacheBehaviors:
-          - !If
-            - InstallKiroIDE
-            - PathPattern: /dcv*
-              AllowedMethods:
-                - GET
-                - HEAD
-                - OPTIONS
-                - PUT
-                - PATCH
-                - POST
-                - DELETE
-              CachePolicyId: !Ref cloudfrontcachepolcodeserver
-              OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3
-              TargetOriginId: CodeServerOrigin
-              ViewerProtocolPolicy: redirect-to-https
-            - !Ref AWS::NoValue
         Logging:
           Bucket: !GetAtt s3bucketlogs.DomainName
           IncludeCookies: false
@@ -1024,16 +943,6 @@ Resources:
       ToPort: 8080
       SourceSecurityGroupId: !Ref securitygroupalb
       Description: Allow inbound from ALB to codeserver
-  securitygroupingressdcv:
-    Type: AWS::EC2::SecurityGroupIngress
-    Condition: InstallKiroIDE
-    Properties:
-      GroupId: !Ref securitygroupcodeserver
-      IpProtocol: tcp
-      FromPort: 8443
-      ToPort: 8443
-      SourceSecurityGroupId: !Ref securitygroupalb
-      Description: Allow inbound from ALB to NICE DCV
 
   ### Authentication - Secrets Manager storing credentials for code-server access and CloudFront origin verification
   secretcodeserver:
@@ -1353,7 +1262,6 @@ Resources:
           export PREFIX_CODE="${PrefixCode}"
           export S3_BUCKET_GIT="${s3bucketgit}"
           export INSTANCE_ARCHITECTURE="${InstanceArchitecture}"
-          export ENABLE_KIRO_IDE="${EnableKiroIDE}"
           export CODE_SERVER_VERSION="${CodeServerVersion}"
           export GITHUB_REPO="${GitHubRepo}"
           export AUTO_SET_DEVELOPER_PROFILE="${AutoSetDeveloperProfile}"
@@ -2414,7 +2322,3 @@ Outputs:
   02CodeServerPassword:
     Description: Retrieve your initial code-server password from AWS Secrets Manager. If rotation is enabled, after 30 days check the 'rotating-codeserver' secret instead
     Value: !Sub https://${AWS::Region}.console.aws.amazon.com/secretsmanager/secret?name=${secretcodeserver}
-  03KiroIDEURL:
-    Condition: InstallKiroIDE
-    Description: URL to access Kiro IDE through NICE DCV. Append /dcv to the CloudFront domain. Username is ec2-user, password from Secrets Manager above
-    Value: !Sub https://${cloudfrontdistributioncodeserver.DomainName}/dcv
