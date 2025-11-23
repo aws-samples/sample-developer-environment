@@ -76,6 +76,10 @@ Parameters:
     AllowedValues:
       - true
       - false
+  GitHubBranch:
+    Type: String
+    Default: main
+    Description: GitHub branch to use for devbox-setup.sh script
   CodeServerVersion:
     Type: String
     Default: "4.105.1"
@@ -1233,7 +1237,7 @@ Resources:
           # Define all variables
           ENV_FILE="/etc/devbox-env.sh" # Environment variables file
           STATUS_FILE="/var/lib/cloud/instance/setup-status.log" # Installation status tracking file
-          GITHUB_RAW_URL="https://raw.githubusercontent.com/aws-samples/sample-developer-environment/refs/heads/main/devbox-setup.sh" # URL to download setup script
+          GITHUB_RAW_URL="https://raw.githubusercontent.com/aws-samples/sample-developer-environment/refs/heads/${GitHubBranch}/devbox-setup.sh" # URL to download setup script
           SETUP_SCRIPT="/var/lib/cloud/scripts/per-boot/setup.sh" # Location of the setup script (runs on every boot)
           SETUP_LOG="/var/log/devbox-setup.log" # Log file for setup script output
 
@@ -1304,7 +1308,7 @@ Resources:
           echo "=================================================================="
           echo "FAILSAFE COMMAND:"
           echo "To manually download and run the latest setup script, execute:"
-          echo "sudo bash -c 'curl -s https://raw.githubusercontent.com/aws-samples/sample-developer-environment/refs/heads/main/devbox-setup.sh -o /tmp/setup.sh && chmod +x /tmp/setup.sh && source /etc/devbox-env.sh && /tmp/setup.sh'"
+          echo "sudo bash -c 'curl -s https://raw.githubusercontent.com/aws-samples/sample-developer-environment/refs/heads/${GitHubBranch}/devbox-setup.sh -o /tmp/setup.sh && chmod +x /tmp/setup.sh && source /etc/devbox-env.sh && /tmp/setup.sh'"
           echo "=================================================================="
           echo ""
 
