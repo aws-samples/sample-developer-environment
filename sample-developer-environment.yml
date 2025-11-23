@@ -40,6 +40,10 @@ Parameters:
     Type: String
     Default: https://github.com/aws-samples/sample-developer-environment.git
     Description: GitHub repository URL to clone as initial workspace content for code-server
+  GitHubBranch:
+    Type: String
+    Default: main
+    Description: GitHub branch to use for devbox-setup.sh script
   S3AssetBucket:
     Type: String
     Default: ""
@@ -76,10 +80,6 @@ Parameters:
     AllowedValues:
       - true
       - false
-  GitHubBranch:
-    Type: String
-    Default: main
-    Description: GitHub branch to use for devbox-setup.sh script
   CodeServerVersion:
     Type: String
     Default: "4.105.1"
