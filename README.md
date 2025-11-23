@@ -67,6 +67,7 @@ This solution deploys a complete browser-based development environment with VS C
 |-----------|-------------|
 | `CodeServerVersion` | Version of code-server to install |
 | `GitHubRepo` | Public repository to clone as initial workspace. Note: Using a custom repository will not include the sample application |
+| `GitHubBranch` | GitHub branch to use for devbox-setup.sh script (default: main) |
 | `S3AssetBucket` | (Optional) S3 bucket containing initial workspace content. Overwrites GitHubRepo if provided |
 | `S3AssetPrefix` | (Optional) S3 bucket asset prefix path. Only required when S3AssetBucket is specified. Needs to end with `/` |
 | `DeployPipeline` | Enable AWS CodePipeline deployments |
