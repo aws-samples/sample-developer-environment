@@ -103,7 +103,7 @@ Parameters:
   InstanceType:
     Type: String
     Default: t4g.large
-    Description: EC2 instance type MUST match architecture. amd64= t3.small, t3a.large, c6i.xlarge, m6a.2xlarge, etc. arm64= t4g.large, c7g.xlarge, m6g.2xlarge, etc.Template will fail if mismatched.
+    Description: EC2 instance type MUST match architecture. amd64= t3.small, t3a.large, c6i.xlarge, m6a.2xlarge, etc. arm64= t4g.large, c7g.xlarge, m6g.2xlarge, etc. Template will fail if mismatched.
   AMIx86CodeServer:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
@@ -187,6 +187,14 @@ Rules:
     Assertions:
       - Assert: !Equals [!Ref InstanceArchitecture, "amd64"]
         AssertDescription: "Kiro IDE requires amd64 architecture. Please select an amd64 instance type or disable Kiro IDE."
+  KiroIDEGPUCheck:
+    RuleCondition: !Equals [!Ref EnableKiroIDE, "true"]
+    Assertions:
+      - Assert: !Or
+          - !Equals [!Select [0, !Split ['.', !Ref InstanceType]], 'g4dn']
+          - !Equals [!Select [0, !Split ['.', !Ref InstanceType]], 'g5']
+          - !Equals [!Select [0, !Split ['.', !Ref InstanceType]], 'g6']
+        AssertDescription: "Kiro IDE requires a GPU instance type (g4dn, g5, or g6 family). Please select a GPU instance type or disable Kiro IDE."
 
 Conditions:
   CreatePipeline: !Equals [!Ref DeployPipeline, "true"]
@@ -754,6 +762,8 @@ Resources:
       HealthCheckPath: /
       HealthCheckPort: 8443
       HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
       Name: !Sub ${PrefixCode}-targetgroup-dcv
       Port: 8443
       Protocol: HTTPS
@@ -913,22 +923,20 @@ Resources:
           TargetOriginId: CodeServerOrigin
           ViewerProtocolPolicy: redirect-to-https
         CacheBehaviors:
-          - !If
-            - InstallKiroIDE
-            - PathPattern: /dcv*
-              AllowedMethods:
-                - GET
-                - HEAD
-                - OPTIONS
-                - PUT
-                - PATCH
-                - POST
-                - DELETE
-              CachePolicyId: !Ref cloudfrontcachepolcodeserver
-              OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3
-              TargetOriginId: CodeServerOrigin
-              ViewerProtocolPolicy: redirect-to-https
-            - !Ref AWS::NoValue
+          # Cache behavior for NICE DCV (Kiro IDE). Only used when EnableKiroIDE is true.
+          - PathPattern: /dcv*
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT
+              - PATCH
+              - POST
+              - DELETE
+            CachePolicyId: !Ref cloudfrontcachepolcodeserver
+            OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3
+            TargetOriginId: CodeServerOrigin
+            ViewerProtocolPolicy: redirect-to-https
         Logging:
           Bucket: !GetAtt s3bucketlogs.DomainName
           IncludeCookies: false
@@ -1034,6 +1042,16 @@ Resources:
       ToPort: 8443
       SourceSecurityGroupId: !Ref securitygroupalb
       Description: Allow inbound from ALB to NICE DCV
+  securitygroupegressdcv:
+    Type: AWS::EC2::SecurityGroupEgress
+    Condition: InstallKiroIDE
+    Properties:
+      GroupId: !Ref securitygroupalb
+      IpProtocol: tcp
+      FromPort: 8443
+      ToPort: 8443
+      DestinationSecurityGroupId: !Ref securitygroupcodeserver
+      Description: Allow outbound from ALB to NICE DCV
 
   ### Authentication - Secrets Manager storing credentials for code-server access and CloudFront origin verification
   secretcodeserver:
@@ -1213,6 +1231,16 @@ Resources:
                 Action:
                   - ssm:GetParameter
                 Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${PrefixCode}/config/AmazonCloudWatch-linux
+        - !If
+          - InstallKiroIDE
+          - PolicyName: !Sub ${PrefixCode}-iampolicy-dcv-license
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+                - Effect: Allow
+                  Action: s3:GetObject
+                  Resource: !Sub arn:${AWS::Partition}:s3:::dcv-license.${AWS::Region}/*
+          - !Ref AWS::NoValue
       Tags:
         - Key: Name
           Value: !Sub ${PrefixCode}-iamrole-codeserver
@@ -1429,7 +1457,7 @@ Resources:
     CreationPolicy:
       ResourceSignal:
         Count: 1
-        Timeout: PT15M
+        Timeout: PT25M
     Metadata:
       cdk_nag:
         rules_to_suppress:

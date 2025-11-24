@@ -90,6 +90,8 @@ Here are some handy files you'll find on the EC2 instance:
 
 ## Kiro CLI Setup
 
+> **Note:** Kiro IDE with NICE DCV (`EnableKiroIDE=true`) **requires a GPU instance** (g4dn, g5, or g6 family). Recommended: g4dn.xlarge for cost-effective desktop performance.
+
 1. [Enable IAM Identity Center](https://docs.aws.amazon.com/singlesignon/latest/userguide/confirm-identity-source.html) if you haven't already
 2. [Create an IAM Identity Center user](https://docs.aws.amazon.com/singlesignon/latest/userguide/addusers.html) if needed
 3. Follow the [Subscribing your team to Kiro](https://kiro.dev/docs/enterprise/subscribe/) guide

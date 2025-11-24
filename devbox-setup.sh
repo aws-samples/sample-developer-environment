@@ -357,18 +357,24 @@ if [ "${ENABLE_KIRO_IDE}" = "true" ] && [ "${INSTANCE_ARCHITECTURE}" = "amd64" ]
 level=info
 [session-management]
 create-session=true
-[session-management/defaults]
 [session-management/automatic-console-session]
 owner=ec2-user
 [display]
 [connectivity]
 enable-quic-frontend=true
+web-url-path="/dcv"
 [security]
 authentication=system
 EOF
+    # Set ec2-user password for DCV authentication
+    PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_CODE_SERVER" --region "$AWS_REGION" --query SecretString --output text | jq -r .password)
+    echo "ec2-user:$PASSWORD" | chpasswd
+    # Start GDM for console session
+    systemctl enable gdm
+    systemctl start gdm
+    # Enable and start DCV server (will auto-create console session)
     systemctl enable dcvserver
     systemctl start dcvserver
-    dcv create-session --owner ec2-user --type console ec2-user-session
     ' "Failed to install NICE DCV"
 
     # Install Kiro IDE
