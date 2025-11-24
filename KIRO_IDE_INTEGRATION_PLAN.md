@@ -433,6 +433,19 @@ chown -R ec2-user:ec2-user /opt/kiro-ide
 - [ ] DCV becomes available after update
 - [ ] Workspace data preserved
 
+**IMPORTANT**: CloudFormation parameter updates don't modify existing EC2 instances. After updating the stack parameter, manually update the environment file and trigger installation:
+
+```bash
+aws ssm send-command \
+  --document-name "AWS-RunShellScript" \
+  --instance-ids "i-XXXXX" \
+  --parameters 'commands=["sed -i \"s/ENABLE_KIRO_IDE=\\\"false\\\"/ENABLE_KIRO_IDE=\\\"true\\\"/\" /etc/devbox-env.sh","source /etc/devbox-env.sh && /var/lib/cloud/scripts/per-boot/setup.sh"]' \
+  --timeout-seconds 1800 \
+  --region us-west-2
+```
+
+Or reboot the instance after manually updating `/etc/devbox-env.sh`.
+
 ## Security Considerations
 
 ### NICE DCV Security
@@ -513,3 +526,57 @@ Set `EnableKiroIDE=false` to remove DCV resources (desktop environment remains i
 5. Test both modes thoroughly
 6. Update documentation
 7. Submit PR for review
+
+
+## Desktop Environment Requirements
+
+### GNOME Desktop Limitations
+
+GNOME has dependencies that require either:
+1. **A physical display (console session with GPU)**, OR
+2. **Hardware acceleration**
+
+This means GNOME **will not work** on non-GPU instances with DCV virtual sessions. Symptoms include:
+- "cannot open display: :1"
+- "software acceleration check failed"
+- "Script terminated during startup"
+
+### Desktop Environment Options
+
+For **non-GPU instances** with DCV virtual sessions, you need:
+- **MATE desktop** (lightweight, works without GPU) - *Not available on AL2023*
+- **XFCE desktop** (lightweight alternative) - *Needs testing on AL2023*
+- **Simple window manager** like metacity + terminal (minimal but functional)
+
+### Deployment Options
+
+**Option 1: GPU Instance (Current Implementation)**
+- Instance: g4dn.xlarge (~$0.526/hour)
+- Desktop: GNOME + console sessions
+- Status: ✅ Fully working
+- Best for: Full desktop experience with Kiro IDE
+
+**Option 2: Non-GPU Instance with Lightweight Desktop**
+- Instance: t3a.large (~$0.03/hour)
+- Desktop: XFCE/metacity + virtual sessions
+- Status: ⚠️ Requires testing and implementation
+- Best for: Cost-sensitive deployments
+
+**Option 3: Browser-Only (No DCV)**
+- Instance: t3a.large (~$0.03/hour)
+- Interface: code-server (VS Code in browser) + Kiro CLI
+- Status: ✅ Already working
+- Best for: Terminal-based AI assistance without GUI
+
+### Recommendation
+
+**Keep GPU requirement** for Kiro IDE feature. The cost difference ($0.50/hour = $12/day) is justified by:
+- Fully functional GNOME desktop environment
+- No compatibility issues or testing required
+- Better user experience for graphical applications
+- Already tested and working
+
+Document the GPU requirement clearly in:
+- CloudFormation parameter descriptions
+- README.md
+- Stack validation rules
