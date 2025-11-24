@@ -341,7 +341,16 @@ if [ "${ENABLE_KIRO_IDE}" = "true" ] && [ "${INSTANCE_ARCHITECTURE}" = "amd64" ]
 
     # Install NICE DCV
     install_component "nice_dcv_installed" '
-    dnf install -y nice-dcv-server nice-dcv-web-viewer
+    ARCH=$(detect_architecture)
+    rpm --import https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY
+    cd /tmp
+    wget -q https://d1uj6qtbmh3dt5.cloudfront.net/nice-dcv-amzn2023-${ARCH}.tgz
+    tar -xzf nice-dcv-amzn2023-${ARCH}.tgz
+    cd nice-dcv-*-amzn2023-${ARCH}
+    dnf install -y nice-dcv-server-*.amzn2023.${ARCH}.rpm nice-dcv-web-viewer-*.amzn2023.${ARCH}.rpm
+    cd /tmp
+    rm -rf nice-dcv-*
+    mkdir -p /etc/dcv
     cat > /etc/dcv/dcv.conf << EOF
 [license]
 [log]
@@ -371,7 +380,8 @@ EOF
     fi
     VERSION=$(curl -s https://prod.download.desktop.kiro.dev/stable/metadata-linux-x64-stable.json | jq -r .currentRelease)
     curl -o /tmp/kiro-ide.tar.gz "https://prod.download.desktop.kiro.dev/releases/stable/linux-x64/signed/$VERSION/tar/kiro-ide-$VERSION-stable-linux-x64.tar.gz"
-    tar -xzf /tmp/kiro-ide.tar.gz -C /opt/
+    mkdir -p /opt/kiro-ide
+    tar -xzf /tmp/kiro-ide.tar.gz -C /opt/kiro-ide --strip-components=1
     rm /tmp/kiro-ide.tar.gz
     mkdir -p /home/ec2-user/Desktop
     cat > /home/ec2-user/Desktop/kiro-ide.desktop << EOF
