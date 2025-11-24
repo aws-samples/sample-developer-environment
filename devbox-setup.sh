@@ -339,6 +339,19 @@ if [ "${ENABLE_KIRO_IDE}" = "true" ] && [ "${INSTANCE_ARCHITECTURE}" = "amd64" ]
     chown -R ec2-user:ec2-user /home/ec2-user/.config
     ' "Failed to install desktop environment"
 
+    # Install NVIDIA driver for GPU instances
+    install_component "nvidia_driver_installed" '
+    # Check if this is a GPU instance
+    if lspci | grep -i nvidia > /dev/null 2>&1; then
+        echo "GPU detected, installing NVIDIA driver..."
+        dnf install -y nvidia-release
+        dnf install -y nvidia-driver nvidia-driver-libs
+        modprobe nvidia || echo "NVIDIA module will load on next boot"
+    else
+        echo "No GPU detected, skipping NVIDIA driver installation"
+    fi
+    ' "Failed to install NVIDIA driver"
+
     # Install NICE DCV
     install_component "nice_dcv_installed" '
     ARCH=$(detect_architecture)
