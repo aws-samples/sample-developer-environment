@@ -754,6 +754,8 @@ Resources:
       HealthCheckPath: /
       HealthCheckPort: 8443
       HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
       Name: !Sub ${PrefixCode}-targetgroup-dcv
       Port: 8443
       Protocol: HTTPS
