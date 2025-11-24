@@ -107,6 +107,20 @@ Here are some handy files you'll find on the EC2 instance:
 8. Create additional agents by adding new files to `.kiro/agents/`
 9. Use Kiro CLI to accelerate your development 🚀
 
+### Kiro IDE (Desktop Application)
+
+When using Kiro IDE through NICE DCV:
+1. Access the desktop at the CloudFront URL + `/dcv` (e.g., `https://your-cloudfront-url.cloudfront.net/dcv`)
+2. Login with username `ec2-user` and password from Secrets Manager
+3. Double-click the "Kiro IDE" icon on the desktop, or run `/opt/kiro-ide/kiro` from terminal
+4. For authentication, Firefox will automatically open for IAM Identity Center login
+5. Alternatively, run `kiro-ide` from any terminal (symlink created automatically)
+
+**Troubleshooting Kiro IDE Authentication:**
+- If browser doesn't open automatically, ensure you're logged into the GNOME desktop session
+- The setup script installs `xdg-utils` and configures Firefox as the default browser
+- You can also authenticate via Kiro CLI first: `kiro-cli login --use-device-flow`, then launch Kiro IDE
+
 ## AWS IAM Roles
 
 The environment is configured with two IAM roles:
