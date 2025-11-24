@@ -390,6 +390,14 @@ EOF
     systemctl start dcvserver
     ' "Failed to install NICE DCV"
 
+    # Install xdg-utils for browser integration
+    install_component "xdg_utils_installed" '
+    dnf install -y xdg-utils
+    sudo -u ec2-user xdg-settings set default-web-browser firefox.desktop
+    echo "export BROWSER=firefox" >> /home/ec2-user/.bashrc
+    chown ec2-user:ec2-user /home/ec2-user/.bashrc
+    ' "Failed to install xdg-utils"
+
     # Install Kiro IDE
     install_component "kiro_ide_installed" '
     ARCH=$(detect_architecture)
@@ -402,13 +410,16 @@ EOF
     mkdir -p /opt/kiro-ide
     tar -xzf /tmp/kiro-ide.tar.gz -C /opt/kiro-ide --strip-components=1
     rm /tmp/kiro-ide.tar.gz
+    # Create symlink for easier access
+    ln -sf /opt/kiro-ide/kiro /usr/local/bin/kiro-ide
+    # Create desktop shortcut
     mkdir -p /home/ec2-user/Desktop
     cat > /home/ec2-user/Desktop/kiro-ide.desktop << EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=Kiro IDE
-Exec=/opt/kiro-ide/kiro-ide
+Exec=/opt/kiro-ide/kiro
 Icon=/opt/kiro-ide/resources/app/icon.png
 Terminal=false
 Categories=Development;IDE;
