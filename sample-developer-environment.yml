@@ -756,6 +756,8 @@ Resources:
       HealthCheckProtocol: HTTPS
       HealthCheckTimeoutSeconds: 10
       HealthyThresholdCount: 2
+      Matcher:
+        HttpCode: 200,404
       Name: !Sub ${PrefixCode}-targetgroup-dcv
       Port: 8443
       Protocol: HTTPS

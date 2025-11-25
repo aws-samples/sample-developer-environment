@@ -488,6 +488,7 @@ KIROEOF
         # Extract MCP servers from platform-engineer agent and create mcp.json for Kiro IDE
         if [ -f "/home/ec2-user/.kiro/agents/platform-engineer.json" ]; then
             echo "INFO: Configuring MCP servers for Kiro IDE..."
+            mkdir -p /home/ec2-user/.kiro/settings
             jq '{mcpServers: .mcpServers}' /home/ec2-user/.kiro/agents/platform-engineer.json > /home/ec2-user/.kiro/settings/mcp.json
             chown ec2-user:ec2-user /home/ec2-user/.kiro/settings/mcp.json
             echo "INFO: MCP servers configured"
