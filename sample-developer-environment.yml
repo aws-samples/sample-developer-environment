@@ -1053,7 +1053,7 @@ Resources:
       Description: Initial code-server password. If rotation enabled, refer to the rotating secret after 30 days.
       KmsKeyId: !GetAtt kmskey.Arn
       GenerateSecretString:
-        SecretStringTemplate: '{"username": "admin"}'
+        SecretStringTemplate: '{"username": "ec2-user"}'
         GenerateStringKey: "password"
         PasswordLength: 16
         ExcludeCharacters: '\[]{}>|*&!%#`@,."$:+=-~^()'''
@@ -2127,7 +2127,7 @@ Resources:
       Description: Rotating code-server password that updates automatically every 30 days. This replaces the initial secret after first rotation.
       KmsKeyId: !GetAtt kmskey.Arn
       GenerateSecretString:
-        SecretStringTemplate: '{"username": "admin"}'
+        SecretStringTemplate: '{"username": "ec2-user"}'
         GenerateStringKey: "password"
         PasswordLength: 16
         ExcludeCharacters: '\[]{}>|*&!%#`@,."$:+=-~^()'''

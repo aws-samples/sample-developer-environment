@@ -299,7 +299,7 @@ install_component "build_tools_" '
 dnf install -y gcc python3-devel
 ' "Failed to install build tools"
 
-# Kiro CLI installation
+# Install Kiro CLI
 install_component "Kiro CLI" '
 # Download and install Kiro CLI
 curl -fsSL https://cli.kiro.dev/install -o /tmp/install-kiro-cli.sh
@@ -313,7 +313,6 @@ else
     pip3 install uv==${UV_VERSION}
 fi
 pip3 show uv || exit 1
-# uv python install ${UV_PYTHON_VERSION}
 if [ "${UVENV_VERSION}" = "latest" ]; then
     pip3 install uvenv
 else
@@ -327,7 +326,17 @@ uvenv install --python ${MCP_PYTHON_VERSION} awslabs.core-mcp-server
 uvenv install --python ${MCP_PYTHON_VERSION} awslabs.aws-documentation-mcp-server
 ' "Failed to set up Kiro prerequisites"
 
-# Kiro IDE Installation
+# Install Session Manager plugin for ECS Exec
+install_component "session_manager_plugin_installed" '
+ARCH=$(detect_architecture)
+if [ "$ARCH" = "aarch64" ]; then
+    dnf install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_arm64/session-manager-plugin.rpm
+else
+    dnf install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm
+fi
+' "Failed to install Session Manager plugin"
+
+# Install Kiro IDE
 if [ "${ENABLE_KIRO_IDE}" = "true" ] && [ "${INSTANCE_ARCHITECTURE}" = "amd64" ]; then
     # Install GNOME Desktop
     install_component "desktop_installed" '
@@ -421,7 +430,7 @@ DCVEOF
     chown ec2-user:ec2-user /home/ec2-user/.bashrc
     ' "Failed to install xdg-utils"
 
-    # Install Kiro IDE
+    # Kiro IDE installation
     install_component "kiro_ide_installed" '
     ARCH=$(detect_architecture)
     if [ "$ARCH" != "x86_64" ]; then
@@ -442,25 +451,51 @@ DCVEOF
 Version=1.0
 Type=Application
 Name=Kiro IDE
+Icon=/opt/kiro-ide/resources/app/resources/linux/code.png
 Exec=/opt/kiro-ide/kiro
 Terminal=false
 Categories=Development;IDE;
 KIROEOF
     chmod 644 /usr/share/applications/kiro-ide.desktop
     ' "Failed to install Kiro IDE"
+    
+    # Rebuild SQLite module for AL2023 GLIBC 2.34 compatibility (Kiro ships with GLIBC 2.38 version)
+    # This allows Kiro to save settings and prevents the import configuration screen on every launch
+    install_component "kiro_sqlite_rebuilt" '
+    dnf install -y nodejs npm gcc-c++ make sqlite-devel
+    cd /tmp
+    npm install --build-from-source @vscode/sqlite3
+    if [ -f /tmp/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node ]; then
+        cp /opt/kiro-ide/resources/app/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node \
+           /opt/kiro-ide/resources/app/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node.original
+        cp /tmp/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node \
+           /opt/kiro-ide/resources/app/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node
+        chown ec2-user:ec2-user /opt/kiro-ide/resources/app/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node
+    else
+        echo "WARNING: SQLite rebuild failed, Kiro IDE may not save settings properly"
+        exit 1
+    fi
+    rm -rf /tmp/node_modules
+    ' "Failed to rebuild SQLite for Kiro IDE"
+    
+    # Copy Kiro configs from workspace to home directory
+    if [ -d "/home/ec2-user/workspace/my-workspace/.kiro" ]; then
+        echo "INFO: Copying Kiro configs from workspace..."
+        cp -r /home/ec2-user/workspace/my-workspace/.kiro /home/ec2-user/
+        chown -R ec2-user:ec2-user /home/ec2-user/.kiro
+        echo "INFO: Kiro configs copied successfully"
+        
+        # Extract MCP servers from platform-engineer agent and create mcp.json for Kiro IDE
+        if [ -f "/home/ec2-user/.kiro/agents/platform-engineer.json" ]; then
+            echo "INFO: Configuring MCP servers for Kiro IDE..."
+            jq '{mcpServers: .mcpServers}' /home/ec2-user/.kiro/agents/platform-engineer.json > /home/ec2-user/.kiro/settings/mcp.json
+            chown ec2-user:ec2-user /home/ec2-user/.kiro/settings/mcp.json
+            echo "INFO: MCP servers configured"
+        fi
+    fi
 elif [ "${ENABLE_KIRO_IDE}" = "true" ]; then
     echo "WARNING: Kiro IDE requires amd64 architecture. Skipping Kiro IDE installation."
 fi
-
-# Install Session Manager plugin for ECS Exec
-install_component "session_manager_plugin_installed" '
-ARCH=$(detect_architecture)
-if [ "$ARCH" = "aarch64" ]; then
-    dnf install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_arm64/session-manager-plugin.rpm
-else
-    dnf install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm
-fi
-' "Failed to install Session Manager plugin"
 
 # Print summary of installation
 echo "INFO: Setup script completed at $(date)"
