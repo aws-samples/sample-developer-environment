@@ -343,7 +343,6 @@ if [ "${ENABLE_KIRO_IDE}" = "true" ] && [ "${INSTANCE_ARCHITECTURE}" = "amd64" ]
     dnf groupinstall -y "Desktop"
     dnf upgrade -y
     systemctl set-default graphical.target
-    systemctl isolate graphical.target
     mkdir -p /home/ec2-user/.config
     touch /home/ec2-user/.config/gnome-initial-setup-done
     chown -R ec2-user:ec2-user /home/ec2-user/.config
