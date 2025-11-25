@@ -423,7 +423,8 @@ DCVEOF
     systemctl start dcvserver
     ' "Failed to install NICE DCV"
 
-    # Install xdg-utils for browser integration
+    # Install xdg-utils and configure Firefox as default browser for Kiro IDE authentication
+    # Required for IAM Identity Center login flow - opens Firefox automatically when authenticating
     install_component "xdg_utils_installed" '
     dnf install -y xdg-utils
     sudo -u ec2-user xdg-settings set default-web-browser firefox.desktop
