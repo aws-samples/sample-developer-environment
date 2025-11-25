@@ -370,9 +370,9 @@ EOF
     # Enable and start DCV server
     systemctl enable dcvserver
     systemctl start dcvserver
-    # Create virtual session for ec2-user
+    # Create virtual session for ec2-user (run as root with --user flag)
     sleep 5
-    sudo -u ec2-user dcv create-session --type virtual --user ec2-user my-session
+    dcv create-session --type virtual --user ec2-user --owner ec2-user my-session
     ' "Failed to install NICE DCV"
 
     # Install xdg-utils for browser integration
