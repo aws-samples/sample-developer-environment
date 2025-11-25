@@ -1452,7 +1452,7 @@ Resources:
     CreationPolicy:
       ResourceSignal:
         Count: 1
-        Timeout: !If [InstallKiroIDE, PT45M, PT15M]
+        Timeout: PT15M
     Metadata:
       cdk_nag:
         rules_to_suppress:
