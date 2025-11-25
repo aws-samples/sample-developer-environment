@@ -747,6 +747,7 @@ Resources:
           Value: network
         - Key: environment
           Value: !Sub ${EnvironmentTag}
+  # DCV target group for NICE DCV desktop access
   albtargetgroupdcv:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Condition: InstallKiroIDE
@@ -757,7 +758,7 @@ Resources:
       HealthCheckTimeoutSeconds: 10
       HealthyThresholdCount: 2
       Matcher:
-        HttpCode: 200,404
+        HttpCode: 200,404  # DCV returns 404 on root path when no session is active, but service is healthy
       Name: !Sub ${PrefixCode}-targetgroup-dcv
       Port: 8443
       Protocol: HTTPS
