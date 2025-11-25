@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Sample browser-based development environment with VS Code, S3-backed git storage, and secure CloudFront access
+Description: Sample browser-based development environment with VS Code, S3-backed git storage, and secure CloudFront access!
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

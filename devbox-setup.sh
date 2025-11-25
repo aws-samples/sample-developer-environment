@@ -350,29 +350,67 @@ if [ "${ENABLE_KIRO_IDE}" = "true" ] && [ "${INSTANCE_ARCHITECTURE}" = "amd64" ]
     dnf install -y nice-dcv-server-*.amzn2023.${ARCH}.rpm nice-dcv-web-viewer-*.amzn2023.${ARCH}.rpm
     cd /tmp
     rm -rf nice-dcv-*
+    
+    # Install XDummy driver for console sessions
+    dnf install -y xorg-x11-drv-dummy
+    
+    # Configure XDummy
+    mkdir -p /etc/X11
+    cat > /etc/X11/xorg.conf << EOF
+Section "Device"
+    Identifier "DummyDevice"
+    Driver "dummy"
+    Option "UseEDID" "false"
+    VideoRam 512000
+EndSection
+
+Section "Monitor"
+    Identifier "DummyMonitor"
+    HorizSync   5.0 - 1000.0
+    VertRefresh 5.0 - 200.0
+    Option "ReducedBlanking"
+EndSection
+
+Section "Screen"
+    Identifier "DummyScreen"
+    Device "DummyDevice"
+    Monitor "DummyMonitor"
+    DefaultDepth 24
+    SubSection "Display"
+        Viewport 0 0
+        Depth 24
+        Virtual 4096 2160
+    EndSubSection
+EndSection
+EOF
+    
+    # Configure DCV for automatic console session
     mkdir -p /etc/dcv
-    cat > /etc/dcv/dcv.conf << EOF
+    cat > /etc/dcv/dcv.conf << "DCVEOF"
 [license]
 [log]
 level=info
 [session-management]
-create-session=false
+create-session=true
+[session-management/defaults]
+[session-management/automatic-console-session]
+owner="ec2-user"
+storage-root="%home%"
 [display]
 [connectivity]
 enable-quic-frontend=true
 web-url-path="/dcv"
 [security]
 authentication=system
-EOF
+DCVEOF
+    
     # Set ec2-user password for DCV authentication
     PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_CODE_SERVER" --region "$AWS_REGION" --query SecretString --output text | jq -r .password)
     echo "ec2-user:$PASSWORD" | chpasswd
+    
     # Enable and start DCV server
     systemctl enable dcvserver
     systemctl start dcvserver
-    # Create virtual session for ec2-user (run as root with --user flag)
-    sleep 5
-    dcv create-session --type virtual --user ec2-user --owner ec2-user my-session
     ' "Failed to install NICE DCV"
 
     # Install xdg-utils for browser integration
@@ -395,23 +433,20 @@ EOF
     mkdir -p /opt/kiro-ide
     tar -xzf /tmp/kiro-ide.tar.gz -C /opt/kiro-ide --strip-components=1
     rm /tmp/kiro-ide.tar.gz
+    chown -R ec2-user:ec2-user /opt/kiro-ide
     # Create symlink for easier access
     ln -sf /opt/kiro-ide/kiro /usr/local/bin/kiro-ide
-    # Create desktop shortcut
-    mkdir -p /home/ec2-user/Desktop
-    cat > /home/ec2-user/Desktop/kiro-ide.desktop << EOF
+    # Add to applications menu
+    cat > /usr/share/applications/kiro-ide.desktop << "KIROEOF"
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=Kiro IDE
 Exec=/opt/kiro-ide/kiro
-Icon=/opt/kiro-ide/resources/app/icon.png
 Terminal=false
 Categories=Development;IDE;
-EOF
-    chmod +x /home/ec2-user/Desktop/kiro-ide.desktop
-    chown -R ec2-user:ec2-user /home/ec2-user/Desktop
-    chown -R ec2-user:ec2-user /opt/kiro-ide
+KIROEOF
+    chmod 644 /usr/share/applications/kiro-ide.desktop
     ' "Failed to install Kiro IDE"
 elif [ "${ENABLE_KIRO_IDE}" = "true" ]; then
     echo "WARNING: Kiro IDE requires amd64 architecture. Skipping Kiro IDE installation."
