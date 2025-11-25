@@ -95,15 +95,15 @@ Parameters:
     Description: Version of code-server to install. See available versions at github.com/coder/code-server/releases
   InstanceArchitecture:
     Type: String
-    Default: arm64
+    Default: amd64
     AllowedValues:
       - amd64
       - arm64
     Description: Choose amd64 for AMD/Intel instances or arm64 for Graviton instances
   InstanceType:
     Type: String
-    Default: t4g.large
-    Description: EC2 instance type MUST match architecture. amd64= t3.small, t3a.large, c6i.xlarge, m6a.2xlarge, etc. arm64= t4g.large, c7g.xlarge, m6g.2xlarge, etc. Template will fail if mismatched.
+    Default: t3a.large
+    Description: EC2 instance type MUST match architecture. amd64= t3.small, t3a.large, c6i.xlarge, m6a.2xlarge, etc. arm64= t4g.large, c7g.xlarge, m6g.2xlarge, etc. Template will fail if mismatched. For Kiro IDE, t3a.large or larger recommended (minimum 2.4GB memory for GNOME).
   AMIx86CodeServer:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
@@ -187,14 +187,6 @@ Rules:
     Assertions:
       - Assert: !Equals [!Ref InstanceArchitecture, "amd64"]
         AssertDescription: "Kiro IDE requires amd64 architecture. Please select an amd64 instance type or disable Kiro IDE."
-  KiroIDEGPUCheck:
-    RuleCondition: !Equals [!Ref EnableKiroIDE, "true"]
-    Assertions:
-      - Assert: !Or
-          - !Equals [!Select [0, !Split ['.', !Ref InstanceType]], 'g4dn']
-          - !Equals [!Select [0, !Split ['.', !Ref InstanceType]], 'g5']
-          - !Equals [!Select [0, !Split ['.', !Ref InstanceType]], 'g6']
-        AssertDescription: "Kiro IDE requires a GPU instance type (g4dn, g5, or g6 family). Please select a GPU instance type or disable Kiro IDE."
 
 Conditions:
   CreatePipeline: !Equals [!Ref DeployPipeline, "true"]
