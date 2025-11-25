@@ -495,10 +495,6 @@ KIROEOF
             echo "INFO: MCP servers configured"
         fi
     fi
-    
-    # Reboot to start graphical target required for DCV console sessions to work
-    echo "INFO: Kiro IDE installation complete. Rebooting to start desktop environment..."
-    reboot
 elif [ "${ENABLE_KIRO_IDE}" = "true" ]; then
     echo "WARNING: Kiro IDE requires amd64 architecture. Skipping Kiro IDE installation."
 fi
