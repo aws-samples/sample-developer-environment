@@ -135,7 +135,7 @@ For better performance and additional features, use the Amazon DCV Client:
 3. Open the DCV Client and connect using the URL
 4. Login with username and password from Secrets Manager
 5. Launch Kiro IDE from the applications menu or run `kiro-ide` in terminal
-6. Firefox opens automatically for IAM Identity Center authentication if required
+6. Firefox opens automatically for IAM Identity Center authentication if required (may take ~10 seconds)
 
 ## AWS IAM Roles
 
