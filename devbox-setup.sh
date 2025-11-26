@@ -514,5 +514,11 @@ if grep -q "\[FAILED\]" $STATUS_FILE; then
 else
     echo "SUCCESS: All installation steps completed successfully."
     echo "INFO: See full logs at $SETUP_LOG"
+    
+    # Reboot if Kiro IDE is enabled to start graphical.target
+    if [ "${ENABLE_KIRO_IDE}" = "true" ] && [ "${INSTANCE_ARCHITECTURE}" = "amd64" ]; then
+        echo "INFO: Rebooting to start desktop environment..."
+        reboot
+    fi
     exit 0
 fi
