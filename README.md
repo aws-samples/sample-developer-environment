@@ -123,7 +123,9 @@ When `EnableKiroIDE=true`, access the full desktop environment through DCV using
 1. Get the DCV connection URL from CloudFormation stack outputs (DCVWebUrl)
 2. Login with username and password from Secrets Manager
 3. Launch Kiro IDE from the applications menu or run `kiro-ide` in terminal
-4. Firefox opens automatically for IAM Identity Center authentication if required
+4. Firefox opens automatically for IAM Identity Center authentication
+
+ℹ️ **Tip:** Having issues with copy/paste? See the [DCV copy/paste documentation](https://docs.aws.amazon.com/dcv/latest/userguide/using-copy-paste.html).
 
 ### Amazon DCV Client
 For better performance and additional features, use the Amazon DCV Client:
