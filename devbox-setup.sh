@@ -421,9 +421,6 @@ DCVEOF
     # Enable and start DCV server
     systemctl enable dcvserver
     systemctl start dcvserver
-    
-    # Start GNOME Display Manager for desktop environment
-    systemctl start gdm
     ' "Failed to install NICE DCV"
 
     # Install xdg-utils and configure Firefox as default browser for Kiro IDE authentication
