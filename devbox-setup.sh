@@ -518,8 +518,8 @@ else
     # Reboot if Kiro IDE is enabled to start graphical.target (only once)
     if [ "${ENABLE_KIRO_IDE}" = "true" ] && [ ! -f /var/lib/cloud/instance/kiro-ide-rebooted ]; then
         touch /var/lib/cloud/instance/kiro-ide-rebooted
-        echo "INFO: Rebooting to start desktop environment..."
-        reboot
+        echo "INFO: Scheduling reboot in 1 minute to start desktop environment..."
+        shutdown -r +1 "Rebooting to start graphical desktop environment"
     fi
     exit 0
 fi
