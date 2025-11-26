@@ -44,20 +44,6 @@
         "FASTMCP_LOG_LEVEL": "ERROR"
       }
     },
-    "awslabs.eks-mcp-server": {
-      "command": "uvenv",
-      "args": [
-        "run",
-        "--python",
-        "3.13",
-        "awslabs.eks-mcp-server",
-        "--",
-        "--allow-write"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
     "awslabs.terraform-mcp-server": {
       "command": "uvenv",
       "args": [
