@@ -343,6 +343,7 @@ if [ "${ENABLE_KIRO_IDE}" = "true" ] && [ "${INSTANCE_ARCHITECTURE}" = "amd64" ]
     dnf groupinstall -y "Desktop"
     dnf upgrade -y
     systemctl set-default graphical.target
+    systemctl start gdm
     mkdir -p /home/ec2-user/.config
     touch /home/ec2-user/.config/gnome-initial-setup-done
     chown -R ec2-user:ec2-user /home/ec2-user/.config
@@ -420,6 +421,9 @@ DCVEOF
     # Enable and start DCV server
     systemctl enable dcvserver
     systemctl start dcvserver
+    
+    # Start GNOME Display Manager for desktop environment
+    systemctl start gdm
     ' "Failed to install NICE DCV"
 
     # Install xdg-utils and configure Firefox as default browser for Kiro IDE authentication
