@@ -2,7 +2,7 @@
 
 This solution deploys a complete browser-based development environment with VS Code, version control, and automated deployments using a single AWS CloudFormation template.
 
-> 🚀 Now includes [Kiro CLI](https://kiro.dev/docs/) preconfiguration!
+> 🚀 Now includes [Kiro IDE](https://kiro.dev/docs/) and [Kiro CLI](https://kiro.dev/docs/cli)
 
 ## Quick Navigation
 - [Repository Structure](#repository-structure)
@@ -10,7 +10,7 @@ This solution deploys a complete browser-based development environment with VS C
 - [Quick Start](#quick-start)
 - [Configuration Options](#configuration-options)
 - [Useful File locations](#useful-file-locations)
-- [Kiro CLI Setup](#kiro-cli-setup)
+- [Kiro Setup](#kiro-setup)
 - [AWS IAM Roles](#aws-iam-roles)
 - [Architecture](#architecture)
 - [Sample Application](#sample-application)
@@ -40,6 +40,8 @@ This solution deploys a complete browser-based development environment with VS C
 ## Key Features
 
 - Browser-based VS Code using [code-server](https://github.com/coder/code-server) accessed through Amazon CloudFront
+- [Kiro CLI](https://kiro.dev/docs/cli) with pre-configured MCP servers for platform and data engineering
+- Optional desktop environment with [Kiro IDE](https://kiro.dev/docs/) accessed through DCV
 - Git version control using [git-remote-s3](https://github.com/awslabs/git-remote-s3) with Amazon S3 storage
 - Automated deployments using AWS CodePipeline and AWS CodeBuild
 - Password rotation using AWS Secrets Manager (30-day automatic rotation)
@@ -73,9 +75,10 @@ This solution deploys a complete browser-based development environment with VS C
 | `DeployPipeline` | Enable AWS CodePipeline deployments |
 | `RotateSecret` | Enable AWS Secrets Manager rotation |
 | `AutoSetDeveloperProfile` | Automatically set Developer profile as default in code-server terminal sessions without requiring manual elevation |
+| `EnableKiroIDE` | Enable Kiro IDE desktop application with DCV |
 | `InstallDotNet` | Install .NET SDK  |
-| `InstanceArchitecture` | Choose between ARM and x86 architecture |
-| `InstanceType` | Pick Amazon EC2 instance type |
+| `InstanceArchitecture` | Choose between ARM (arm64) and x86 (amd64) architecture (Kiro IDE requires x86) |
+| `InstanceType` | Pick Amazon EC2 instance type (t3a.large and up recommended for Kiro IDE) |
 
 ## Useful File Locations
 
@@ -88,38 +91,49 @@ Here are some handy files you'll find on the EC2 instance:
 | `/var/lib/cloud/scripts/per-boot/setup.sh` | Setup script location (runs on every boot) |
 | `/var/log/devbox-setup.log` | Log file for setup script output |
 
-## Kiro CLI Setup
+## Kiro Setup
 
-> **Note:** Kiro IDE with NICE DCV (`EnableKiroIDE=true`) **requires a GPU instance** (g4dn, g5, or g6 family). Recommended: g4dn.xlarge for cost-effective desktop performance.
+### Prerequisites
 
 1. [Enable IAM Identity Center](https://docs.aws.amazon.com/singlesignon/latest/userguide/confirm-identity-source.html) if you haven't already
 2. [Create an IAM Identity Center user](https://docs.aws.amazon.com/singlesignon/latest/userguide/addusers.html) if needed
 3. Follow the [Subscribing your team to Kiro](https://kiro.dev/docs/enterprise/subscribe/) guide
-4. Run `kiro-cli login --use-device-flow` and follow prompts for headless authentication
+
+### Kiro CLI
+
+From the code-server terminal:
+
+1. Run `kiro-cli login --use-device-flow` and follow prompts for headless authentication
 
     ![Kiro Setup](img/qsetup.png)
 
-5. Navigate to workspace: `cd /home/ec2-user/workspace/my-workspace`
-6. (optional) Set the default agent: `kiro-cli settings chat.defaultAgent platform-engineer`
-7. Start with `kiro-cli` or `kiro-cli --agent platform-engineer`
-8. Use `/model` to select AI model, `/tools` to see available MCP tools
-7. Browse [AWS Labs MCP](https://github.com/awslabs/mcp) for additional MCP servers
-8. Create additional agents by adding new files to `.kiro/agents/`
-9. Use Kiro CLI to accelerate your development 🚀
+2. Navigate to workspace: `cd /home/ec2-user/workspace/my-workspace`
+3. (optional) Set the default agent: `kiro-cli settings chat.defaultAgent platform-engineer`
+4. Start with `kiro-cli` or `kiro-cli --agent platform-engineer`
+5. Use `/model` to select AI model, `/tools` to see available MCP tools
+6. Browse [AWS Labs MCP](https://github.com/awslabs/mcp) for additional MCP servers
+7. Create additional agents by adding new files to `.kiro/agents/`
+8. Use Kiro CLI to accelerate your development 🚀
 
 ### Kiro IDE (Desktop Application)
 
-When using Kiro IDE through NICE DCV:
-1. Access the desktop at the CloudFront URL + `/dcv` (e.g., `https://your-cloudfront-url.cloudfront.net/dcv`)
-2. Login with username `ec2-user` and password from Secrets Manager
-3. Double-click the "Kiro IDE" icon on the desktop, or run `/opt/kiro-ide/kiro` from terminal
-4. For authentication, Firefox will automatically open for IAM Identity Center login
-5. Alternatively, run `kiro-ide` from any terminal (symlink created automatically)
+When `EnableKiroIDE=true`, access the full desktop environment through DCV using either a web browser or Amazon DCV Client:
 
-**Troubleshooting Kiro IDE Authentication:**
-- If browser doesn't open automatically, ensure you're logged into the GNOME desktop session
-- The setup script installs `xdg-utils` and configures Firefox as the default browser
-- You can also authenticate via Kiro CLI first: `kiro-cli login --use-device-flow`, then launch Kiro IDE
+### Browser Access
+1. Get the DCV connection URL from CloudFormation stack outputs (DCVWebUrl)
+2. Login with username and password from Secrets Manager
+3. Launch Kiro IDE from the applications menu or run `kiro-ide` in terminal
+4. Firefox opens automatically for IAM Identity Center authentication if required
+
+### Amazon DCV Client
+For better performance and additional features, use the Amazon DCV Client:
+
+1. [Download Amazon DCV Client](https://download.nice-dcv.com/) for your operating system
+2. Get the DCV connection URL from CloudFormation stack outputs (DCVWebUrl)
+3. Open the DCV Client and connect using the URL
+4. Login with username and password from Secrets Manager
+5. Launch Kiro IDE from the applications menu or run `kiro-ide` in terminal
+6. Firefox opens automatically for IAM Identity Center authentication if required
 
 ## AWS IAM Roles
 
