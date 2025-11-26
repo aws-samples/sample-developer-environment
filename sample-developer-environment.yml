@@ -2439,5 +2439,5 @@ Outputs:
     Value: !Sub https://${AWS::Region}.console.aws.amazon.com/secretsmanager/secret?name=${secretcodeserver}
   03KiroIDEURL:
     Condition: InstallKiroIDE
-    Description: URL to access Kiro IDE through NICE DCV. Append /dcv to the CloudFront domain. Username is ec2-user, password from Secrets Manager above
+    Description: URL to access Kiro IDE through web browser or NICE DCV client
     Value: !Sub https://${cloudfrontdistributioncodeserver.DomainName}/dcv
