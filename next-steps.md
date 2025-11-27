@@ -26,10 +26,10 @@ Accelerate safe software releases with built-in blue/green deployments
 
 ## Hands-On Learning
 
-**[Amazon ECS Workshop](https://ecsworkshop.com/)**
-
-Comprehensive hands-on workshop covering ECS fundamentals, microservices, CI/CD, and more
-
 **[AWS 101 – Containers Workshop](https://catalog.workshops.aws/aws101-containers/)**
 
 Interactive workshop to learn container fundamentals on AWS
+
+**[Amazon ECS Workshop](https://ecsworkshop.com/)**
+
+Comprehensive hands-on workshop covering ECS fundamentals, microservices, CI/CD, and more
