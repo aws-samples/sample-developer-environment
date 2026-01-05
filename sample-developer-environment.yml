@@ -44,7 +44,7 @@ Parameters:
     Description: GitHub repository URL to clone as initial workspace content for code-server
   GitHubBranch:
     Type: String
-    Default: kiro-ide-testing
+    Default: main
     Description: GitHub branch to use for devbox-setup.sh script
   S3AssetBucket:
     Type: String
