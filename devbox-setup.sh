@@ -299,7 +299,7 @@ install_component "build_tools_" '
 dnf install -y gcc python3-devel
 ' "Failed to install build tools"
 
-# Kiro installation
+# Install Kiro CLI
 install_component "Kiro CLI" '
 # Download and install Kiro CLI
 curl -fsSL https://cli.kiro.dev/install -o /tmp/install-kiro-cli.sh
@@ -313,7 +313,6 @@ else
     pip3 install uv==${UV_VERSION}
 fi
 pip3 show uv || exit 1
-# uv python install ${UV_PYTHON_VERSION}
 if [ "${UVENV_VERSION}" = "latest" ]; then
     pip3 install uvenv
 else
@@ -337,6 +336,169 @@ else
 fi
 ' "Failed to install Session Manager plugin"
 
+# Install Kiro IDE
+if [ "${ENABLE_KIRO_IDE}" = "true" ] && [ "${INSTANCE_ARCHITECTURE}" = "amd64" ]; then
+    # Install GNOME Desktop
+    install_component "desktop_installed" '
+    dnf groupinstall -y "Desktop"
+    dnf upgrade -y
+    systemctl set-default graphical.target
+    mkdir -p /home/ec2-user/.config
+    touch /home/ec2-user/.config/gnome-initial-setup-done
+    chown -R ec2-user:ec2-user /home/ec2-user/.config
+    ' "Failed to install desktop environment"
+
+    # Install NICE DCV
+    install_component "nice_dcv_installed" '
+    ARCH=$(detect_architecture)
+    rpm --import https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY
+    cd /tmp
+    wget -q https://d1uj6qtbmh3dt5.cloudfront.net/nice-dcv-amzn2023-${ARCH}.tgz
+    tar -xzf nice-dcv-amzn2023-${ARCH}.tgz
+    cd nice-dcv-*-amzn2023-${ARCH}
+    dnf install -y nice-dcv-server-*.amzn2023.${ARCH}.rpm nice-dcv-web-viewer-*.amzn2023.${ARCH}.rpm
+    cd /tmp
+    rm -rf nice-dcv-*
+    
+    # Install XDummy driver for console sessions
+    dnf install -y xorg-x11-drv-dummy
+    
+    # Configure XDummy
+    mkdir -p /etc/X11
+    cat > /etc/X11/xorg.conf << EOF
+Section "Device"
+    Identifier "DummyDevice"
+    Driver "dummy"
+    Option "UseEDID" "false"
+    VideoRam 512000
+EndSection
+
+Section "Monitor"
+    Identifier "DummyMonitor"
+    HorizSync   5.0 - 1000.0
+    VertRefresh 5.0 - 200.0
+    Option "ReducedBlanking"
+EndSection
+
+Section "Screen"
+    Identifier "DummyScreen"
+    Device "DummyDevice"
+    Monitor "DummyMonitor"
+    DefaultDepth 24
+    SubSection "Display"
+        Viewport 0 0
+        Depth 24
+        Virtual 4096 2160
+    EndSubSection
+EndSection
+EOF
+    
+    # Configure DCV for automatic console session
+    mkdir -p /etc/dcv
+    cat > /etc/dcv/dcv.conf << "DCVEOF"
+[license]
+[log]
+level=info
+[session-management]
+create-session=true
+[session-management/defaults]
+[session-management/automatic-console-session]
+owner="ec2-user"
+storage-root="%home%"
+[display]
+[connectivity]
+enable-quic-frontend=true
+web-url-path="/dcv"
+[security]
+authentication=system
+DCVEOF
+    
+    # Set ec2-user password for DCV authentication
+    PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_CODE_SERVER" --region "$AWS_REGION" --query SecretString --output text | jq -r .password)
+    echo "ec2-user:$PASSWORD" | chpasswd
+    
+    # Enable and start DCV server
+    systemctl enable dcvserver
+    systemctl start dcvserver
+    ' "Failed to install NICE DCV"
+
+    # Install xdg-utils and configure Firefox as default browser for Kiro IDE authentication
+    # Required for IAM Identity Center login flow - opens Firefox automatically when authenticating
+    install_component "xdg_utils_installed" '
+    dnf install -y xdg-utils
+    sudo -u ec2-user xdg-settings set default-web-browser firefox.desktop
+    echo "export BROWSER=firefox" >> /home/ec2-user/.bashrc
+    chown ec2-user:ec2-user /home/ec2-user/.bashrc
+    ' "Failed to install xdg-utils"
+
+    # Kiro IDE installation
+    install_component "kiro_ide_installed" '
+    ARCH=$(detect_architecture)
+    if [ "$ARCH" != "x86_64" ]; then
+        echo "ERROR: Kiro IDE requires amd64 architecture. Current: $ARCH"
+        exit 1
+    fi
+    VERSION=$(curl -s https://prod.download.desktop.kiro.dev/stable/metadata-linux-x64-stable.json | jq -r .currentRelease)
+    curl -o /tmp/kiro-ide.tar.gz "https://prod.download.desktop.kiro.dev/releases/stable/linux-x64/signed/$VERSION/tar/kiro-ide-$VERSION-stable-linux-x64.tar.gz"
+    mkdir -p /opt/kiro-ide
+    tar -xzf /tmp/kiro-ide.tar.gz -C /opt/kiro-ide --strip-components=1
+    rm /tmp/kiro-ide.tar.gz
+    chown -R ec2-user:ec2-user /opt/kiro-ide
+    # Create symlink for easier access
+    ln -sf /opt/kiro-ide/kiro /usr/local/bin/kiro-ide
+    # Add to applications menu
+    cat > /usr/share/applications/kiro-ide.desktop << "KIROEOF"
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Kiro IDE
+Icon=/opt/kiro-ide/resources/app/resources/linux/code.png
+Exec=/opt/kiro-ide/kiro
+Terminal=false
+Categories=Development;IDE;
+KIROEOF
+    chmod 644 /usr/share/applications/kiro-ide.desktop
+    ' "Failed to install Kiro IDE"
+    
+    # Rebuild SQLite module for AL2023 GLIBC 2.34 compatibility (Kiro ships with GLIBC 2.38 version)
+    # This allows Kiro to save settings and prevents the import configuration screen on every launch
+    install_component "kiro_sqlite_rebuilt" '
+    dnf install -y nodejs npm gcc-c++ make sqlite-devel
+    cd /tmp
+    npm install --build-from-source @vscode/sqlite3
+    if [ -f /tmp/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node ]; then
+        cp /opt/kiro-ide/resources/app/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node \
+           /opt/kiro-ide/resources/app/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node.original
+        cp /tmp/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node \
+           /opt/kiro-ide/resources/app/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node
+        chown ec2-user:ec2-user /opt/kiro-ide/resources/app/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node
+    else
+        echo "WARNING: SQLite rebuild failed, Kiro IDE may not save settings properly"
+        exit 1
+    fi
+    rm -rf /tmp/node_modules
+    ' "Failed to rebuild SQLite for Kiro IDE"
+    
+    # Copy Kiro configs from workspace to home directory
+    if [ -d "/home/ec2-user/workspace/my-workspace/.kiro" ]; then
+        echo "INFO: Copying Kiro configs from workspace..."
+        cp -r /home/ec2-user/workspace/my-workspace/.kiro /home/ec2-user/
+        chown -R ec2-user:ec2-user /home/ec2-user/.kiro
+        echo "INFO: Kiro configs copied successfully"
+        
+        # Extract MCP servers from platform-engineer agent and create mcp.json for Kiro IDE
+        if [ -f "/home/ec2-user/.kiro/agents/platform-engineer.json" ]; then
+            echo "INFO: Configuring MCP servers for Kiro IDE..."
+            mkdir -p /home/ec2-user/.kiro/settings
+            jq '{mcpServers: .mcpServers}' /home/ec2-user/.kiro/agents/platform-engineer.json > /home/ec2-user/.kiro/settings/mcp.json
+            chown ec2-user:ec2-user /home/ec2-user/.kiro/settings/mcp.json
+            echo "INFO: MCP servers configured"
+        fi
+    fi
+elif [ "${ENABLE_KIRO_IDE}" = "true" ]; then
+    echo "WARNING: Kiro IDE requires amd64 architecture. Skipping Kiro IDE installation."
+fi
+
 # Print summary of installation
 echo "INFO: Setup script completed at $(date)"
 echo "INFO: Installation summary:"
@@ -352,5 +514,12 @@ if grep -q "\[FAILED\]" $STATUS_FILE; then
 else
     echo "SUCCESS: All installation steps completed successfully."
     echo "INFO: See full logs at $SETUP_LOG"
+    
+    # Reboot if Kiro IDE is enabled to start graphical.target (only once)
+    if [ "${ENABLE_KIRO_IDE}" = "true" ] && [ ! -f /var/lib/cloud/instance/kiro-ide-rebooted ]; then
+        touch /var/lib/cloud/instance/kiro-ide-rebooted
+        echo "INFO: Scheduling reboot in 1 minute to start desktop environment..."
+        shutdown -r +1 "Rebooting to start graphical desktop environment"
+    fi
     exit 0
 fi
