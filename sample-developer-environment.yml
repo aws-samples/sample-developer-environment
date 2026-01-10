@@ -84,7 +84,7 @@ Parameters:
       - false
   EnableKiroIDE:
     Type: String
-    Default: true
+    Default: false
     Description: "Enable Kiro IDE with NICE DCV remote desktop (requires amd64 architecture)"
     AllowedValues:
       - true
