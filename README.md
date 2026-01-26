@@ -20,8 +20,8 @@ This solution deploys a complete browser-based development environment with VS C
 
 ```
 .
-├── .amazonq/                         # Amazon Q CLI workspace configuration directory
-│   └── cli-agents/                   # Agent configuration directory
+├── .kiro/                            # Kiro workspace configuration directory
+│   └── agents/                       # Agent configuration directory
 │       └── platform-engineer.json    # Platform engineering agent with MCP servers
 │       └── data-engineer.json        # Data engineering agent with MCP servers
 ├── dev/                              # Development workspace
