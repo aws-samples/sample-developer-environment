@@ -1276,8 +1276,6 @@ Resources:
           Value: !Sub ${EnvironmentTag}
   ec2loggroup:
     Type: AWS::Logs::LogGroup
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
     Properties:
       LogGroupName: !Sub /aws/ec2/${PrefixCode}-codeserver
       RetentionInDays: 14
