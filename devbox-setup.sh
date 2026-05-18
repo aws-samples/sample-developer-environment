@@ -236,7 +236,6 @@ fi
 install_component "git_remote_s3_installed" '
 dnf install git -y -q
 dnf install -y python3 python3-pip
-pip3 install boto3==${BOTO3_VERSION}
 if [ "${GIT_REMOTE_S3_VERSION}" = "latest" ]; then
     pip3 install git-remote-s3
 else
