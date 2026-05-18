@@ -1400,14 +1400,20 @@ Resources:
 
           # Download the setup script from GitHub and place it in per-boot directory
           echo "INFO: Downloading setup script from GitHub"
-          curl -s -o $SETUP_SCRIPT $GITHUB_RAW_URL
-          chmod +x $SETUP_SCRIPT
+          curl -fsSL --retry 3 --retry-delay 10 -o "$SETUP_SCRIPT" "$GITHUB_RAW_URL"
+          CURL_EXIT_CODE=$?
 
-          # Run the setup script for the first time
-          echo "INFO: Running initial setup"
-          source $ENV_FILE
-          $SETUP_SCRIPT
-          SETUP_EXIT_CODE=$?
+          if [ $CURL_EXIT_CODE -ne 0 ] || [ ! -s "$SETUP_SCRIPT" ]; then
+            echo "ERROR: Failed to download setup script from $GITHUB_RAW_URL (curl exit: $CURL_EXIT_CODE)"
+            SETUP_EXIT_CODE=1
+          else
+            chmod +x "$SETUP_SCRIPT"
+            # Run the setup script for the first time
+            echo "INFO: Running initial setup"
+            source "$ENV_FILE"
+            "$SETUP_SCRIPT"
+            SETUP_EXIT_CODE=$?
+          fi
 
           # Report setup status
           if [ $SETUP_EXIT_CODE -eq 0 ]; then
