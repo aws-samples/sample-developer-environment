@@ -40,7 +40,7 @@ This solution deploys a complete browser-based development environment with VS C
 ## Key Features
 
 - Browser-based VS Code using [code-server](https://github.com/coder/code-server) accessed through Amazon CloudFront
-- [Kiro CLI](https://kiro.dev/docs/cli) with pre-configured MCP servers for platform and data engineering
+- [Kiro CLI](https://kiro.dev/docs/cli) with uv and uvenv for installing MCP servers
 - Optional desktop environment with [Kiro IDE](https://kiro.dev/docs/) accessed through DCV
 - Git version control using [git-remote-s3](https://github.com/awslabs/git-remote-s3) with Amazon S3 storage
 - Automated deployments using AWS CodePipeline and AWS CodeBuild
