@@ -455,24 +455,8 @@ KIROEOF
     chmod 644 /usr/share/applications/kiro-ide.desktop
     ' "Failed to install Kiro IDE"
     
-    # Rebuild SQLite module for AL2023 GLIBC 2.34 compatibility (Kiro ships with GLIBC 2.38 version)
-    # This allows Kiro to save settings and prevents the import configuration screen on every launch
-    install_component "kiro_sqlite_rebuilt" '
-    dnf install -y nodejs npm gcc-c++ make sqlite-devel
-    cd /tmp
-    npm install --build-from-source @vscode/sqlite3
-    if [ -f /tmp/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node ]; then
-        cp /opt/kiro-ide/resources/app/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node \
-           /opt/kiro-ide/resources/app/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node.original
-        cp /tmp/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node \
-           /opt/kiro-ide/resources/app/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node
-        chown ec2-user:ec2-user /opt/kiro-ide/resources/app/node_modules/@vscode/sqlite3/build/Release/vscode-sqlite3.node
-    else
-        echo "WARNING: SQLite rebuild failed, Kiro IDE may not save settings properly"
-        exit 1
-    fi
-    rm -rf /tmp/node_modules
-    ' "Failed to rebuild SQLite for Kiro IDE"
+    # NOTE: SQLite rebuild removed for testing - checking if latest Kiro IDE ships with compatible GLIBC
+    # If settings don't save or import config screen appears on every launch, re-enable this block
     
     # Copy Kiro configs from workspace to home directory
     if [ -d "/home/ec2-user/workspace/my-workspace/.kiro" ]; then
