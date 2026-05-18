@@ -319,11 +319,6 @@ else
     pip3 install uvenv==${UVENV_VERSION}
 fi
 pip3 show uvenv || exit 1
-uvenv install --python ${MCP_PYTHON_VERSION} awslabs.terraform-mcp-server
-uvenv install --python ${MCP_PYTHON_VERSION} awslabs.ecs-mcp-server
-uvenv install --python ${MCP_PYTHON_VERSION} awslabs.eks-mcp-server
-uvenv install --python ${MCP_PYTHON_VERSION} awslabs.core-mcp-server
-uvenv install --python ${MCP_PYTHON_VERSION} awslabs.aws-documentation-mcp-server
 ' "Failed to set up Kiro prerequisites"
 
 # Install Session Manager plugin for ECS Exec
