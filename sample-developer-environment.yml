@@ -1132,6 +1132,14 @@ Resources:
             Condition:
               Bool:
                 aws:SecureTransport: false
+          - Sid: EnforceTLSVersion
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${s3bucketgit}
+              - !Sub arn:${AWS::Partition}:s3:::${s3bucketgit}/*
+            Condition:
               NumericLessThan:
                 s3:TlsVersion: 1.2
 
@@ -1688,6 +1696,14 @@ Resources:
             Condition:
               Bool:
                 aws:SecureTransport: false
+          - Sid: EnforceTLSVersion
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${s3bucketartifact}
+              - !Sub arn:${AWS::Partition}:s3:::${s3bucketartifact}/*
+            Condition:
               NumericLessThan:
                 s3:TlsVersion: 1.2
   # Pipeline-specific permissions for iamroledeveloper conditional on DeployPipeline
