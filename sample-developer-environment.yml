@@ -4,20 +4,9 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Networking
-        Parameters:
-          - VpcCidr
-      - Label:
-          default: Tool Versions
-        Parameters:
-          - CodeServerVersion
-          - UvVersion
-          - UvenvVersion
-          - TerraformExtensionVersion
-          - DotNetVersion
-      - Label:
           default: Deployment Settings
         Parameters:
+          - EnableKiroIDE
           - GitHubRepo
           - S3AssetBucket
           - S3AssetPrefix
@@ -25,14 +14,25 @@ Metadata:
           - RotateSecret
           - AutoSetDeveloperProfile
           - InstallDotNet
-          - EnableKiroIDE
+          - DotNetVersion
       - Label:
-          default: Compute settings
+          default: Networking
+        Parameters:
+          - VpcCidr
+      - Label:
+          default: Compute Settings
         Parameters:
           - InstanceArchitecture
           - InstanceType
           - AMIx86CodeServer
           - AMIArmCodeServer
+      - Label:
+          default: Tool Versions
+        Parameters:
+          - CodeServerVersion
+          - UvVersion
+          - UvenvVersion
+          - TerraformExtensionVersion
       - Label:
           default: Tagging and Naming
         Parameters:
@@ -40,10 +40,14 @@ Metadata:
           - SolutionTag
           - EnvironmentTag
 Parameters:
-  VpcCidr:
+  ### Deployment Settings
+  EnableKiroIDE:
     Type: String
-    Default: "10.180"
-    Description: Network addressing prefix (first two octets) for VPC and subnet CIDR blocks, e.g., '10.180'
+    Default: false
+    Description: "Enable Desktop with Kiro IDE (requires amd64 architecture)"
+    AllowedValues:
+      - true
+      - false
   GitHubRepo:
     Type: String
     Default: https://github.com/aws-samples/sample-developer-environment.git
@@ -84,13 +88,39 @@ Parameters:
     AllowedValues:
       - true
       - false
-  EnableKiroIDE:
+  DotNetVersion:
     Type: String
-    Default: false
-    Description: "Enable Kiro IDE with NICE DCV remote desktop (requires amd64 architecture)"
+    Default: "10.0"
+    Description: .NET SDK version to install when InstallDotNet is enabled. Must match an AL2023 dotnet-sdk package version
     AllowedValues:
-      - true
-      - false
+      - "8.0"
+      - "10.0"
+  ### Networking
+  VpcCidr:
+    Type: String
+    Default: "10.180"
+    Description: Network addressing prefix (first two octets) for VPC and subnet CIDR blocks, e.g., '10.180'
+  ### Compute Settings
+  InstanceArchitecture:
+    Type: String
+    Default: amd64
+    AllowedValues:
+      - amd64
+      - arm64
+    Description: Choose amd64 for AMD/Intel instances or arm64 for Graviton instances
+  InstanceType:
+    Type: String
+    Default: t3a.large
+    Description: EC2 instance type MUST match architecture. amd64= t3.small, t3a.large, c6i.xlarge, m6a.2xlarge, etc. arm64= t4g.large, c7g.xlarge, m6g.2xlarge, etc. Template will fail if mismatched. For Kiro IDE, t3a.large or larger recommended (minimum 2.4GB memory for GNOME).
+  AMIx86CodeServer:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: SSM parameter path for x86_64 AMI (used for AMD/Intel instances)
+  AMIArmCodeServer:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
+    Description: SSM parameter path for arm64 AMI (used for Graviton instances)
+  ### Tool Versions
   CodeServerVersion:
     Type: String
     Default: "4.135.0"
@@ -115,44 +145,19 @@ Parameters:
     Description: Version of the HashiCorp Terraform code-server extension. See open-vsx.org/extension/hashicorp/terraform
     AllowedPattern: '^\d+\.\d+\.\d+$'
     ConstraintDescription: Must be a semantic version, e.g. 2.40.0
-  DotNetVersion:
-    Type: String
-    Default: "10.0"
-    Description: .NET SDK version to install when InstallDotNet is enabled. Must match an AL2023 dotnet-sdk package version
-    AllowedValues:
-      - "8.0"
-      - "10.0"
-  InstanceArchitecture:
-    Type: String
-    Default: amd64
-    AllowedValues:
-      - amd64
-      - arm64
-    Description: Choose amd64 for AMD/Intel instances or arm64 for Graviton instances
-  InstanceType:
-    Type: String
-    Default: t3a.large
-    Description: EC2 instance type MUST match architecture. amd64= t3.small, t3a.large, c6i.xlarge, m6a.2xlarge, etc. arm64= t4g.large, c7g.xlarge, m6g.2xlarge, etc. Template will fail if mismatched. For Kiro IDE, t3a.large or larger recommended (minimum 2.4GB memory for GNOME).
-  AMIx86CodeServer:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
-    Description: SSM parameter path for x86_64 AMI (used for AMD/Intel instances)
-  AMIArmCodeServer:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
-    Description: SSM parameter path for arm64 AMI (used for Graviton instances)
+  ### Tagging and Naming
   PrefixCode:
     Type: String
     Default: devbox
     Description: Resource naming prefix for uniqueness and organization. Six characters or less. Must be lowercase alphanumeric and cannot start with 'aws'
-  EnvironmentTag:
-    Type: String
-    Default: production
-    Description: Environment identifier for resource tagging e.g. dev, prod
   SolutionTag:
     Type: String
     Default: SampleDeveloperEnvironment
     Description: Solution identifier for resource tagging and grouping. Use alphanumeric characters only
+  EnvironmentTag:
+    Type: String
+    Default: production
+    Description: Environment identifier for resource tagging e.g. dev, prod
 
 ### Region to CloudFront Prefix List mapping - delete regions not required for deployment
 ### To get prefix list for your region: aws ec2 describe-managed-prefix-lists --filters Name=prefix-list-name,Values=com.amazonaws.global.cloudfront.origin-facing
