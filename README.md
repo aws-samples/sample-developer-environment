@@ -33,8 +33,7 @@ This solution deploys a complete browser-based development environment with VS C
 │   ├── versions.tf                   # Provider versions and backend
 │   ├── website.tf                    # Sample static website
 │   └── terraform.tfvars              # Variable defaults
-│── devbox-setup.sh                   # EC2 Bootstrap script
-└── sample-developer-environment.yml  # Main CloudFormation template
+└── sample-developer-environment.yml  # Main CloudFormation template (includes the EC2 setup script as an SSM document)
 ```
 
 ## Key Features
@@ -69,7 +68,6 @@ This solution deploys a complete browser-based development environment with VS C
 |-----------|-------------|
 | `CodeServerVersion` | Version of code-server to install |
 | `GitHubRepo` | Public repository to clone as initial workspace. Note: Using a custom repository will not include the sample application |
-| `GitHubBranch` | GitHub branch to use for devbox-setup.sh script (default: main) |
 | `S3AssetBucket` | (Optional) S3 bucket containing initial workspace content. Overwrites GitHubRepo if provided |
 | `S3AssetPrefix` | (Optional) S3 bucket asset prefix path. Only required when S3AssetBucket is specified. Needs to end with `/` |
 | `DeployPipeline` | Enable AWS CodePipeline deployments |
@@ -90,6 +88,12 @@ Here are some handy files you'll find on the EC2 instance:
 | `/var/lib/cloud/instance/setup-status.log` | Installation status tracking file |
 | `/var/lib/cloud/scripts/per-boot/setup.sh` | Setup script location (runs on every boot) |
 | `/var/log/devbox-setup.log` | Log file for setup script output |
+
+The setup script is embedded in the CloudFormation template as an AWS Systems Manager (SSM) document, so the solution is fully self-contained - no external downloads at boot. The instance fetches the script from the document on every boot and skips completed steps. To re-run it on a live instance:
+
+```bash
+aws ssm send-command --document-name <PrefixCode>-document-devbox-setup --instance-ids <instance-id>
+```
 
 ## Kiro Setup
 
