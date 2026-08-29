@@ -2255,7 +2255,6 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - logs:CreateLogGroup
               - logs:CreateLogStream
               - logs:PutLogEvents
             Resource:
@@ -3014,7 +3013,6 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - logs:CreateLogGroup
               - logs:CreateLogStream
               - logs:PutLogEvents
             Resource:
