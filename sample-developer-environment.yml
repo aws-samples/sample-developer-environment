@@ -481,7 +481,7 @@ Resources:
           Value: network
         - Key: environment
           Value: !Sub ${EnvironmentTag}
-    DependsOn: internetgateway
+    DependsOn: internetgatewayattach
   routetablepublic:
     Type: AWS::EC2::RouteTable
     Properties:
