@@ -66,6 +66,7 @@ This solution deploys a complete browser-based development environment with [Kir
 
 | Parameter | Description |
 |-----------|-------------|
+| `AwsCliVersion` | Version of the AWS CLI v2 to install (official installer, replaces the older AL2023 packaged CLI) |
 | `CodeServerVersion` | Version of code-server to install |
 | `UvenvVersion` | Version of uvenv to install (uv is installed automatically at the version uvenv pins) |
 | `TerraformExtensionVersion` | Version of the HashiCorp Terraform code-server extension |

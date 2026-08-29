@@ -29,6 +29,7 @@ Metadata:
       - Label:
           default: Tool Versions
         Parameters:
+          - AwsCliVersion
           - CodeServerVersion
           - UvenvVersion
           - TerraformExtensionVersion
@@ -120,6 +121,12 @@ Parameters:
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
     Description: SSM parameter path for arm64 AMI (used for Graviton instances)
   ### Tool Versions
+  AwsCliVersion:
+    Type: String
+    Default: "2.36.34"
+    Description: Version of the AWS CLI v2 to install
+    AllowedPattern: '^\d+\.\d+\.\d+$'
+    ConstraintDescription: Must be a semantic version, e.g. 2.36.34
   CodeServerVersion:
     Type: String
     Default: "4.135.0"
@@ -1431,6 +1438,21 @@ Resources:
                   dnf update -y -q
                   ' "Failed to update system packages"
 
+                  # Install AWS CLI
+                  install_component "aws_cli_updated" '
+                  ARCH=$(detect_architecture)
+                  dnf install -y -q unzip
+                  cd /tmp
+                  curl -s -o awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-${ARCH}-${AWS_CLI_VERSION}.zip"
+                  unzip -q -o awscliv2.zip
+                  ./aws/install --update
+                  rm -rf /tmp/aws /tmp/awscliv2.zip
+                  # New CLI verified working before the packaged one is removed
+                  /usr/local/bin/aws --version
+                  dnf remove -y -q awscli-2
+                  aws --version
+                  ' "Failed to install AWS CLI"
+
                   # Install CloudWatch agent
                   install_component "cloudwatch_installed" '
                   dnf install -y -q amazon-cloudwatch-agent jq
@@ -1895,6 +1917,7 @@ Resources:
           # Environment variables for setup
 
           # Pinned package versions (from CloudFormation parameters)
+          export AWS_CLI_VERSION="${AwsCliVersion}"
           export UVENV_VERSION="${UvenvVersion}"
           export TERRAFORM_EXT_VERSION="${TerraformExtensionVersion}"
           export DOTNET_VERSION="${DotNetVersion}"
