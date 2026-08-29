@@ -41,7 +41,7 @@ This solution deploys a complete browser-based development environment with VS C
 - Browser-based VS Code using [code-server](https://github.com/coder/code-server) accessed through Amazon CloudFront
 - [Kiro CLI](https://kiro.dev/docs/cli) with uv and uvenv for installing MCP servers
 - Optional desktop environment with [Kiro IDE](https://kiro.dev/docs/) accessed through DCV
-- Git version control using [git-remote-s3](https://github.com/awslabs/git-remote-s3) with Amazon S3 storage
+- Git version control using [AWS CodeCommit](https://docs.aws.amazon.com/codecommit/latest/userguide/welcome.html) with native CodePipeline integration
 - Automated deployments using AWS CodePipeline and AWS CodeBuild
 - Password rotation using AWS Secrets Manager (30-day automatic rotation)
 - Pre-configured AWS development environment:
@@ -58,7 +58,7 @@ This solution deploys a complete browser-based development environment with VS C
    - Provide S3 bucket name `S3AssetBucket` and `S3AssetPrefix` parameters
 3. Access VS Code through the provided CloudFormation output URL
 4. Get your password from AWS Secrets Manager (link in outputs)
-5. Click *File* > *Open Folder* and navigate to `/home/ec2-user/my-workspace`. This is the git/S3 initialized project directory
+5. Click *File* > *Open Folder* and navigate to `/home/ec2-user/workspace/my-workspace`. This is the CodeCommit-backed project directory
 6. Test code in `dev`, copy to `release`, commit and push to trigger deployment
 
 
@@ -159,7 +159,7 @@ If you wish to have elevated AWS permissions automatically enabled in all new te
 
 ## Architecture
 
-The environment runs in a private subnet with CloudFront access, using S3 for git storage and CodePipeline for automated deployments.
+The environment runs in a private subnet with CloudFront access, using CodeCommit for git storage and CodePipeline for automated deployments.
 
 ![Architecture Diagram](img/architecture.png)
 

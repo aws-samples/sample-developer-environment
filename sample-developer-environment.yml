@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Sample browser-based development environment with VS Code, S3-backed git storage, and secure CloudFront access
+Description: Sample browser-based development environment with VS Code, CodeCommit version control, and secure CloudFront access
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -636,20 +636,6 @@ Resources:
             Resource:
               - !Sub arn:${AWS::Partition}:s3:::${s3bucketlogs}
               - !Sub arn:${AWS::Partition}:s3:::${s3bucketlogs}/*
-          - Sid: Allow S3 Logging Service for git and artifact buckets
-            Effect: Allow
-            Principal:
-              Service: logging.s3.amazonaws.com
-            Action: s3:PutObject
-            Resource:
-              - !Sub arn:${AWS::Partition}:s3:::${s3bucketlogs}/s3-logs/git/*
-              - !Sub arn:${AWS::Partition}:s3:::${s3bucketlogs}/s3-logs/pipeline/*
-            Condition:
-              StringEquals:
-                aws:SourceAccount: !Ref AWS::AccountId
-              ArnLike:
-                aws:SourceArn:
-                  - !Sub arn:${AWS::Partition}:s3:::${s3bucketgit}
           - !If
             # BEWARE: Inline condition for artifact bucket logging - can't be grouped due to policy structure.
             - CreatePipeline
@@ -1077,31 +1063,16 @@ Resources:
           - id: AwsSolutions-SMG4
             reason: "This is the initial deployment secret only. For automated rotation, enable the RotateSecret parameter which creates and uses secretcodeserverrotating instead."
 
-  ### Source Control Storage - S3 bucket configured as a git remote for version control, acting as a serverless git repository with encryption and access controls
-  s3bucketgit:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Delete
+  ### Source Control - CodeCommit repository for version control, sourcing the deployment pipeline
+  codecommitrepo:
+    Type: AWS::CodeCommit::Repository
     Properties:
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              KMSMasterKeyID: !Ref kmskeyalias
-              SSEAlgorithm: aws:kms
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      VersioningConfiguration:
-        Status: Enabled
-      LoggingConfiguration:
-        DestinationBucketName: !Ref s3bucketlogs
-        LogFilePrefix: s3-logs/git/
-      # Required for pipeline build
-      NotificationConfiguration:
-        EventBridgeConfiguration:
-          EventBridgeEnabled: true
+      RepositoryName: !Sub ${PrefixCode}-repo-workspace
+      RepositoryDescription: Developer workspace repository - source for the deployment pipeline
+      KmsKeyId: !GetAtt kmskey.Arn
       Tags:
+        - Key: Name
+          Value: !Sub ${PrefixCode}-repo-workspace
         - Key: provisioner
           Value: CFN
         - Key: solution
@@ -1110,33 +1081,6 @@ Resources:
           Value: storage
         - Key: environment
           Value: !Sub ${EnvironmentTag}
-  s3bucketpolicygit:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref s3bucketgit
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Sid: EnforceSecureTransport
-            Effect: Deny
-            Principal: "*"
-            Action: s3:*
-            Resource:
-              - !Sub arn:${AWS::Partition}:s3:::${s3bucketgit}
-              - !Sub arn:${AWS::Partition}:s3:::${s3bucketgit}/*
-            Condition:
-              Bool:
-                aws:SecureTransport: false
-          - Sid: EnforceTLSVersion
-            Effect: Deny
-            Principal: "*"
-            Action: s3:*
-            Resource:
-              - !Sub arn:${AWS::Partition}:s3:::${s3bucketgit}
-              - !Sub arn:${AWS::Partition}:s3:::${s3bucketgit}/*
-            Condition:
-              NumericLessThan:
-                s3:TlsVersion: 1.2
 
   ### Development Environment - EC2 instance running code-server with developer tools and git integration
   iamrolecodeserver:
@@ -1208,19 +1152,16 @@ Resources:
                   - secretsmanager:DescribeSecret
                 Resource:
                   - !Ref secretcodeserver
-        - PolicyName: !Sub ${PrefixCode}-iampolicy-codeserver-S3
+        - PolicyName: !Sub ${PrefixCode}-iampolicy-codeserver-codecommit
           PolicyDocument:
             Version: 2012-10-17
             Statement:
               - Effect: Allow
                 Action:
-                  - s3:PutObject
-                  - s3:GetObject
-                  - s3:DeleteObject
-                Resource: !Sub arn:${AWS::Partition}:s3:::${s3bucketgit}/*
-              - Effect: Allow
-                Action: s3:ListBucket
-                Resource: !Sub arn:${AWS::Partition}:s3:::${s3bucketgit}
+                  - codecommit:GitPull
+                  - codecommit:GitPush
+                  - codecommit:GetBranch
+                Resource: !GetAtt codecommitrepo.Arn
         - PolicyName: !Sub ${PrefixCode}-iampolicy-codeserver-SSM
           PolicyDocument:
             Version: 2012-10-17
@@ -1610,25 +1551,36 @@ Resources:
                       echo "INFO: code-server service already running"
                   fi
 
-                  # Install git-remote-s3
-                  install_component "git_remote_s3_installed" '
+                  # Configure git with the CodeCommit credential helper (built into the AWS CLI)
+                  install_component "git_codecommit_configured" '
                   dnf install git -y -q
-                  dnf install -y python3 python3-pip
-                  if [ "${GIT_REMOTE_S3_VERSION}" = "latest" ]; then
-                      pip3 install git-remote-s3
-                  else
-                      pip3 install git-remote-s3==${GIT_REMOTE_S3_VERSION}
-                  fi
-                  pip3 show git-remote-s3 || exit 1
-                  su - ec2-user -c "git config --global user.name \"EC2 User\""
-                  su - ec2-user -c "git config --global user.email \"ec2-user@example.com\""
-                  su - ec2-user -c "git config --global init.defaultBranch main"
-                  ' "Failed to install or configure git-remote-s3"
+                  cat > /home/ec2-user/.gitconfig << '"'"'EOF'"'"'
+                  [user]
+                      name = EC2 User
+                      email = ec2-user@example.com
+                  [init]
+                      defaultBranch = main
+                  [credential]
+                      helper = !aws codecommit credential-helper $@
+                      UseHttpPath = true
+                  EOF
+                  chown ec2-user:ec2-user /home/ec2-user/.gitconfig
+                  ' "Failed to configure git for CodeCommit"
 
-                  # Initialize workspace from GitHub or S3
+                  # Initialize workspace from CodeCommit, seeding from S3 assets or GitHub if the repo is empty
                   if ! step_completed "workspace_initialized"; then
-                      if [ -n "${S3_ASSET_BUCKET}" ]; then
-                          echo "INFO: Initializing from S3 assets..."
+                      if aws codecommit get-branch --repository-name ${REPO_NAME} --branch-name main --region ${AWS_REGION} >/dev/null 2>&1; then
+                          echo "INFO: Cloning existing CodeCommit repository..."
+                          if su - ec2-user -c "
+                              cd /home/ec2-user/workspace && \
+                              git clone ${REPO_URL} my-workspace
+                          "; then
+                              mark_step_completed "workspace_initialized"
+                          else
+                              mark_step_failed "workspace_initialized" "Failed to clone CodeCommit repository"
+                          fi
+                      elif [ -n "${S3_ASSET_BUCKET}" ]; then
+                          echo "INFO: Seeding CodeCommit repository from S3 assets..."
                           if su - ec2-user -c "
                               mkdir -p /home/ec2-user/workspace/my-workspace && \
                               cd /home/ec2-user/workspace/my-workspace && \
@@ -1636,26 +1588,26 @@ Resources:
                               git init && \
                               git add . && \
                               git commit -m 'Initial commit from S3 assets' && \
-                              git remote add origin s3+zip://${S3_BUCKET_GIT}/my-workspace && \
+                              git remote add origin ${REPO_URL} && \
                               git push -u origin main
                           "; then
                               mark_step_completed "workspace_initialized"
                           else
-                              mark_step_failed "workspace_initialized" "Failed to initialize workspace from S3"
+                              mark_step_failed "workspace_initialized" "Failed to seed repository from S3"
                           fi
                       else
-                          echo "INFO: Cloning from GitHub..."
+                          echo "INFO: Seeding CodeCommit repository from GitHub..."
                           if su - ec2-user -c "
                               cd /home/ec2-user/workspace && \
                               git clone ${GITHUB_REPO} my-workspace && \
                               cd my-workspace && \
                               git remote remove origin && \
-                              git remote add origin s3+zip://${S3_BUCKET_GIT}/my-workspace && \
+                              git remote add origin ${REPO_URL} && \
                               git push -u origin main
                           "; then
                               mark_step_completed "workspace_initialized"
                           else
-                              mark_step_failed "workspace_initialized" "Failed to initialize workspace from GitHub"
+                              mark_step_failed "workspace_initialized" "Failed to seed repository from GitHub"
                           fi
                       fi
                   else
@@ -1671,9 +1623,9 @@ Resources:
                       ' "Failed to set AWS profile defaults"
                   fi
 
-                  # Install build tools for MCP servers with C extensions
+                  # Install build tools for MCP servers with C extensions (pip also used by the Kiro CLI step)
                   install_component "build_tools_installed" '
-                  dnf install -y gcc python3-devel
+                  dnf install -y gcc python3-devel python3-pip
                   ' "Failed to install build tools"
 
                   # Install Kiro CLI
@@ -1945,14 +1897,14 @@ Resources:
           export UV_VERSION="latest"
           # might not need below line
           export UVENV_VERSION="latest"
-          export GIT_REMOTE_S3_VERSION="latest"
           export DOTNET_VERSION="8.0"
 
           # Variables from CloudFormation template
           export AWS_ACCOUNT_ID="${AWS::AccountId}"
           export AWS_REGION="${AWS::Region}"
           export PREFIX_CODE="${PrefixCode}"
-          export S3_BUCKET_GIT="${s3bucketgit}"
+          export REPO_NAME="${codecommitrepo.Name}"
+          export REPO_URL="${codecommitrepo.CloneUrlHttp}"
           export INSTANCE_ARCHITECTURE="${InstanceArchitecture}"
           export ENABLE_KIRO_IDE="${EnableKiroIDE}"
           export CODE_SERVER_VERSION="${CodeServerVersion}"
@@ -2074,6 +2026,14 @@ Resources:
                   - kms:GenerateDataKey
                 Resource:
                   - !GetAtt kmskey.Arn
+        - PolicyName: !Sub ${PrefixCode}-iampolicy-developer-codecommit
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codecommit:*
+                Resource: !GetAtt codecommitrepo.Arn
         - PolicyName: !Sub ${PrefixCode}-iampolicy-terraform-kms-key
           PolicyDocument:
             Version: 2012-10-17
@@ -2469,6 +2429,19 @@ Resources:
                 Resource:
                   - !GetAtt codebuildprojectbuild.Arn
                   - !GetAtt codebuildprojectdestroy.Arn
+        - PolicyName: !Sub ${PrefixCode}-pipeline-codecommit
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codecommit:GetBranch
+                  - codecommit:GetCommit
+                  - codecommit:GetRepository
+                  - codecommit:UploadArchive
+                  - codecommit:GetUploadArchiveStatus
+                  - codecommit:CancelUploadArchive
+                Resource: !GetAtt codecommitrepo.Arn
         - PolicyName: !Sub ${PrefixCode}-pipeline-s3
           PolicyDocument:
             Version: 2012-10-17
@@ -2480,15 +2453,12 @@ Resources:
                   - s3:GetBucketVersioning
                   - s3:PutObject
                 Resource:
-                  - !Sub arn:${AWS::Partition}:s3:::${s3bucketgit}
-                  - !Sub arn:${AWS::Partition}:s3:::${s3bucketgit}/*
                   - !Sub arn:${AWS::Partition}:s3:::${s3bucketartifact}
                   - !Sub arn:${AWS::Partition}:s3:::${s3bucketartifact}/*
               - Effect: Allow
                 Action:
                   - s3:ListBucket
                 Resource:
-                  - !Sub arn:${AWS::Partition}:s3:::${s3bucketgit}
                   - !Sub arn:${AWS::Partition}:s3:::${s3bucketartifact}
         - PolicyName: !Sub ${PrefixCode}-pipeline-kms
           PolicyDocument:
@@ -2522,10 +2492,9 @@ Resources:
         rules_to_suppress:
           - id: AwsSolutions-IAM5
             appliesTo:
-              - "Resource::arn:<AWS::Partition>:s3:::<s3bucketgit>/*"
               - "Resource::arn:<AWS::Partition>:s3:::<s3bucketartifact>/*"
               - "Action::kms:ReEncrypt*"
-            reason: "Pipeline role requires S3 object-level and KMS permissions. Access scoped to specific buckets and KMS key."
+            reason: "Pipeline role requires S3 object-level and KMS permissions. Access scoped to the artifact bucket, CodeCommit repository and KMS key."
   # Terraform apply pipeline
   pipelinebuild:
     Type: AWS::CodePipeline::Pipeline
@@ -2544,10 +2513,11 @@ Resources:
                 Category: Source
                 Owner: AWS
                 Version: 1
-                Provider: S3
+                Provider: CodeCommit
               Configuration:
-                S3Bucket: !Ref s3bucketgit
-                S3ObjectKey: my-workspace/refs/heads/main/repo.zip
+                RepositoryName: !GetAtt codecommitrepo.Name
+                BranchName: main
+                # EventBridge rule triggers the pipeline - no polling
                 PollForSourceChanges: false
               OutputArtifacts:
                 - Name: SourceCode
@@ -2598,10 +2568,11 @@ Resources:
                 Category: Source
                 Owner: AWS
                 Version: 1
-                Provider: S3
+                Provider: CodeCommit
               Configuration:
-                S3Bucket: !Ref s3bucketgit
-                S3ObjectKey: my-workspace/refs/heads/main/repo.zip
+                RepositoryName: !GetAtt codecommitrepo.Name
+                BranchName: main
+                # EventBridge rule triggers the pipeline - no polling
                 PollForSourceChanges: false
               OutputArtifacts:
                 - Name: SourceCode
@@ -2643,7 +2614,7 @@ Resources:
           Value: devops
         - Key: environment
           Value: !Sub ${EnvironmentTag}
-  # Trigger code pipeline on S3 event
+  # Trigger code pipeline on CodeCommit push to main
   iamroleeventbridge:
     Type: AWS::IAM::Role
     Condition: CreatePipeline
@@ -2702,16 +2673,19 @@ Resources:
       EventBusName: default
       EventPattern:
         source:
-          - aws.s3
+          - aws.codecommit
         detail-type:
-          - Object Created
+          - CodeCommit Repository State Change
+        resources:
+          - !GetAtt codecommitrepo.Arn
         detail:
-          bucket:
-            name:
-              - !Ref s3bucketgit
-          object:
-            key:
-              - my-workspace/refs/heads/main/repo.zip
+          event:
+            - referenceCreated
+            - referenceUpdated
+          referenceType:
+            - branch
+          referenceName:
+            - main
       State: ENABLED
       Targets:
         - Arn: !Sub arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:${pipelinebuild}
