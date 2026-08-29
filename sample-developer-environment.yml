@@ -2283,6 +2283,43 @@ Resources:
               ArnEquals:
                 ec2:Subnet:
                   - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnetprivate01}
+  # CodeBuild log groups
+  codebuildbuildloggroup:
+    Type: AWS::Logs::LogGroup
+    Condition: CreatePipeline
+    Properties:
+      KmsKeyId: !GetAtt kmskey.Arn
+      LogGroupName: !Sub /aws/codebuild/${PrefixCode}-codebuildproject-terraform-build
+      RetentionInDays: 14
+      Tags:
+        - Key: Name
+          Value: !Sub ${PrefixCode}-codebuild-build-loggroup
+        - Key: provisioner
+          Value: CFN
+        - Key: solution
+          Value: !Sub ${SolutionTag}
+        - Key: resourcetype
+          Value: monitoring
+        - Key: environment
+          Value: !Sub ${EnvironmentTag}
+  codebuilddestroyloggroup:
+    Type: AWS::Logs::LogGroup
+    Condition: CreatePipeline
+    Properties:
+      KmsKeyId: !GetAtt kmskey.Arn
+      LogGroupName: !Sub /aws/codebuild/${PrefixCode}-codebuildproject-terraform-destroy
+      RetentionInDays: 14
+      Tags:
+        - Key: Name
+          Value: !Sub ${PrefixCode}-codebuild-destroy-loggroup
+        - Key: provisioner
+          Value: CFN
+        - Key: solution
+          Value: !Sub ${SolutionTag}
+        - Key: resourcetype
+          Value: monitoring
+        - Key: environment
+          Value: !Sub ${EnvironmentTag}
   # Terraform apply CodeBuild Project
   codebuildprojectbuild:
     Type: AWS::CodeBuild::Project
@@ -2730,6 +2767,25 @@ Resources:
       RotationRules:
         AutomaticallyAfterDays: 30
       RotateImmediatelyOnUpdate: false
+  # Rotation Lambda log group defined here so it is retention-managed, encrypted and deleted with the stack
+  lambdarotationloggroup:
+    Type: AWS::Logs::LogGroup
+    Condition: EnableRotation
+    Properties:
+      KmsKeyId: !GetAtt kmskey.Arn
+      LogGroupName: !Sub /aws/lambda/${PrefixCode}-lambda-rotation-codeserver
+      RetentionInDays: 14
+      Tags:
+        - Key: Name
+          Value: !Sub ${PrefixCode}-lambda-rotation-loggroup
+        - Key: provisioner
+          Value: CFN
+        - Key: solution
+          Value: !Sub ${SolutionTag}
+        - Key: resourcetype
+          Value: monitoring
+        - Key: environment
+          Value: !Sub ${EnvironmentTag}
   lambdasecretrotation:
     # https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotate-secrets_lambda-functions.html
     Type: AWS::Lambda::Function
