@@ -613,31 +613,20 @@ Resources:
               NumericLessThan:
                 s3:TlsVersion: 1.2
           # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/enable-access-logging.html
-          - Sid: Allow ALB logging access regions available as of August 2022 or later
+          - Sid: AllowALBLogging
             Effect: Allow
             Principal:
               Service: logdelivery.elasticloadbalancing.amazonaws.com
-            Action:
-              - s3:PutObject
-            Resource:
-              - !Sub arn:${AWS::Partition}:s3:::${s3bucketlogs}
-              - !Sub arn:${AWS::Partition}:s3:::${s3bucketlogs}/*
-          - Sid: Allow ALB logging access regions available before August 2022
+            Action: s3:PutObject
+            Resource: !Sub arn:${AWS::Partition}:s3:::${s3bucketlogs}/alb-logs/*
+          - Sid: AllowALBLoggingLegacyRegions
             Effect: Allow
             Principal:
-              AWS: 
-                !Join 
-                  - ""
-                  - - "arn:"
-                    - !Ref AWS::Partition
-                    - ":iam::"
-                    - !FindInMap [RegionMap, !Ref "AWS::Region", ALBAccount]
-                    - ":root"
-            Action:
-              - s3:PutObject
-            Resource:
-              - !Sub arn:${AWS::Partition}:s3:::${s3bucketlogs}
-              - !Sub arn:${AWS::Partition}:s3:::${s3bucketlogs}/*
+              AWS: !Sub
+                - arn:${AWS::Partition}:iam::${ALBAccount}:root
+                - ALBAccount: !FindInMap [RegionMap, !Ref 'AWS::Region', ALBAccount]
+            Action: s3:PutObject
+            Resource: !Sub arn:${AWS::Partition}:s3:::${s3bucketlogs}/alb-logs/*
           - !If
             # BEWARE: Inline condition for artifact bucket logging - can't be grouped due to policy structure.
             - CreatePipeline
@@ -655,18 +644,6 @@ Resources:
                   aws:SourceArn:
                     - !Sub arn:${AWS::Partition}:s3:::${s3bucketartifact}
             - !Ref AWS::NoValue
-          - Sid: Allow ALB Logging
-            Effect: Allow
-            Principal:
-              AWS: !Join 
-                - ""
-                - - "arn:"
-                  - !Ref AWS::Partition
-                  - ":iam::"
-                  - !FindInMap [RegionMap, !Ref "AWS::Region", ALBAccount]
-                  - ":root"
-            Action: s3:PutObject
-            Resource: !Sub arn:${AWS::Partition}:s3:::${s3bucketlogs}/alb-logs/*
 
   ### Access Layer - ALB and CloudFront distribution for secure access to code-server
   albcodeserver:
