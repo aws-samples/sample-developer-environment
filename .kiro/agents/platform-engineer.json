@@ -7,18 +7,6 @@
     "file://README.md"
   ],
   "mcpServers": {
-    "awslabs.core-mcp-server": {
-      "command": "uvenv",
-      "args": [
-        "run",
-        "--python",
-        "3.13",
-        "awslabs.core-mcp-server"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
     "awslabs.aws-documentation-mcp-server": {
       "command": "uvenv",
       "args": [
@@ -39,18 +27,6 @@
         "--python",
         "3.13",
         "awslabs.ecs-mcp-server"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
-    "awslabs.terraform-mcp-server": {
-      "command": "uvenv",
-      "args": [
-        "run",
-        "--python",
-        "3.13",
-        "awslabs.terraform-mcp-server"
       ],
       "env": {
         "FASTMCP_LOG_LEVEL": "ERROR"
