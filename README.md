@@ -1,15 +1,15 @@
 # sample-developer-environment
 
-This solution deploys a complete browser-based development environment with VS Code, version control, and automated deployments using a single AWS CloudFormation template.
+> 📢 **v2.0.0 released:** now fully self-contained in a single CloudFormation template, with CodeCommit version control. Using v1? See the [v1.0.0 release notes](https://github.com/aws-samples/sample-developer-environment/releases/tag/v1.0.0).
 
-> 🚀 Now includes [Kiro IDE](https://kiro.dev/docs/) and [Kiro CLI](https://kiro.dev/docs/cli)
+This solution deploys a complete browser-based development environment with [Kiro IDE](https://kiro.dev/docs/), [Kiro CLI](https://kiro.dev/docs/cli) and VS Code, plus version control and automated deployments, all from a single self-contained AWS CloudFormation template.
 
 ## Quick Navigation
 - [Repository Structure](#repository-structure)
 - [Key Features](#key-features)
 - [Quick Start](#quick-start)
 - [Configuration Options](#configuration-options)
-- [Useful File locations](#useful-file-locations)
+- [Useful File Locations](#useful-file-locations)
 - [Kiro Setup](#kiro-setup)
 - [AWS IAM Roles](#aws-iam-roles)
 - [Architecture](#architecture)
@@ -22,7 +22,7 @@ This solution deploys a complete browser-based development environment with VS C
 .
 ├── .kiro/                            # Kiro workspace configuration directory
 │   └── agents/                       # Agent configuration directory
-│       └── platform-engineer.json    # Platform engineering agent with MCP servers
+│       ├── platform-engineer.json    # Platform engineering agent with MCP servers
 │       └── data-engineer.json        # Data engineering agent with MCP servers
 ├── dev/                              # Development workspace
 │   └── README.md                     # Development guide
@@ -78,7 +78,7 @@ This solution deploys a complete browser-based development environment with VS C
 | `RotateSecret` | Enable AWS Secrets Manager rotation |
 | `AutoSetDeveloperProfile` | Automatically set Developer profile as default in code-server terminal sessions without requiring manual elevation |
 | `EnableKiroIDE` | Enable Kiro IDE desktop application with DCV |
-| `InstallDotNet` | Install .NET SDK  |
+| `InstallDotNet` | Install .NET SDK (version set by `DotNetVersion`) |
 | `InstanceArchitecture` | Choose between ARM (arm64) and x86 (amd64) architecture (Kiro IDE requires x86) |
 | `InstanceType` | Pick Amazon EC2 instance type (t3a.large and up recommended for Kiro IDE) |
 
@@ -93,7 +93,7 @@ Here are some handy files you'll find on the EC2 instance:
 | `/var/lib/cloud/scripts/per-boot/setup.sh` | Setup script location (runs on every boot) |
 | `/var/log/devbox-setup.log` | Log file for setup script output |
 
-The setup script is embedded in the CloudFormation template as an AWS Systems Manager (SSM) document, so the solution is fully self-contained - no external downloads at boot. The instance fetches the script from the document on every boot and skips completed steps. To re-run it on a live instance:
+The setup script is embedded in the CloudFormation template as an AWS Systems Manager (SSM) document, so the solution is fully self-contained with no external downloads at boot. The instance fetches the script from the document on every boot and skips completed steps. To re-run it on a live instance:
 
 ```bash
 aws ssm send-command --document-name <PrefixCode>-document-devbox-setup --instance-ids <instance-id>
@@ -128,7 +128,7 @@ From the code-server terminal:
 When `EnableKiroIDE=true`, access the full desktop environment through DCV using either a web browser or Amazon DCV Client:
 
 ### Browser Access
-1. Get the DCV connection URL from CloudFormation stack outputs (DCVWebUrl)
+1. Get the DCV connection URL from CloudFormation stack outputs (`03KiroIDEURL`)
 2. Login with username and password from Secrets Manager
 3. Launch Kiro IDE from the applications menu (opens in the workspace folder) or run `kiro-ide` in terminal
 4. Firefox opens automatically for IAM Identity Center authentication (may take ~10 seconds)
@@ -139,7 +139,7 @@ When `EnableKiroIDE=true`, access the full desktop environment through DCV using
 For better performance and additional features, use the Amazon DCV Client:
 
 1. [Download Amazon DCV Client](https://download.nice-dcv.com/) for your operating system
-2. Get the DCV connection URL from CloudFormation stack outputs (DCVWebUrl)
+2. Get the DCV connection URL from CloudFormation stack outputs (`03KiroIDEURL`)
 3. Open the DCV Client and connect using the URL
 4. Login with username and password from Secrets Manager
 5. Launch Kiro IDE from the applications menu (opens in the workspace folder) or run `kiro-ide` in terminal
