@@ -335,6 +335,11 @@ Resources:
             Principal:
               Service: vpc-flow-logs.amazonaws.com
             Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Sub "${AWS::AccountId}"
+              ArnLike:
+                "aws:SourceArn": !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:vpc-flow-log/*"
       Policies:
         - PolicyName: !Sub ${PrefixCode}-iampolicy-VpcFlowLogsPermissions
           PolicyDocument:
@@ -350,11 +355,6 @@ Resources:
                 Resource:
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/vpc/${PrefixCode}-flowlogs
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/vpc/${PrefixCode}-flowlogs:*
-                Condition:
-                  StringEquals:
-                    aws:SourceAccount: !Sub "${AWS::AccountId}"
-                  ArnLike:
-                    "aws:SourceArn": !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:*"
       Tags:
         - Key: Name
           Value: !Sub ${PrefixCode}-iamrole-VpcFlowLogs
