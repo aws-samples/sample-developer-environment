@@ -1,15 +1,15 @@
 # sample-developer-environment
 
-This solution deploys a complete browser-based development environment with VS Code, version control, and automated deployments using a single AWS CloudFormation template.
+> 📢 **v2.0.0 released:** now fully self-contained in a single CloudFormation template, with CodeCommit version control and the Agent Toolkit for AWS built in. Using v1? See the [v1.0.0 release notes](https://github.com/aws-samples/sample-developer-environment/releases/tag/v1.0.0).
 
-> 🚀 Now includes [Kiro IDE](https://kiro.dev/docs/) and [Kiro CLI](https://kiro.dev/docs/cli)
+This solution deploys a complete browser-based development environment with [Kiro IDE](https://kiro.dev/docs/), [Kiro CLI](https://kiro.dev/docs/cli) and VS Code, plus version control and automated deployments, all from a single self-contained AWS CloudFormation template.
 
 ## Quick Navigation
 - [Repository Structure](#repository-structure)
 - [Key Features](#key-features)
 - [Quick Start](#quick-start)
 - [Configuration Options](#configuration-options)
-- [Useful File locations](#useful-file-locations)
+- [Useful File Locations](#useful-file-locations)
 - [Kiro Setup](#kiro-setup)
 - [AWS IAM Roles](#aws-iam-roles)
 - [Architecture](#architecture)
@@ -22,8 +22,8 @@ This solution deploys a complete browser-based development environment with VS C
 .
 ├── .kiro/                            # Kiro workspace configuration directory
 │   └── agents/                       # Agent configuration directory
-│       └── platform-engineer.json    # Platform engineering agent with MCP servers
-│       └── data-engineer.json        # Data engineering agent with MCP servers
+│       ├── platform-engineer.json    # Platform engineering agent using the AWS MCP Server
+│       └── data-engineer.json        # Data engineering agent using the AWS MCP Server
 ├── dev/                              # Development workspace
 │   └── README.md                     # Development guide
 ├── release/                          # Sample Terraform application
@@ -33,16 +33,15 @@ This solution deploys a complete browser-based development environment with VS C
 │   ├── versions.tf                   # Provider versions and backend
 │   ├── website.tf                    # Sample static website
 │   └── terraform.tfvars              # Variable defaults
-│── devbox-setup.sh                   # EC2 Bootstrap script
-└── sample-developer-environment.yml  # Main CloudFormation template
+└── sample-developer-environment.yml  # Main CloudFormation template (includes the EC2 setup script as an SSM document)
 ```
 
 ## Key Features
 
 - Browser-based VS Code using [code-server](https://github.com/coder/code-server) accessed through Amazon CloudFront
-- [Kiro CLI](https://kiro.dev/docs/cli) with uv and uvenv for installing MCP servers
+- [Kiro CLI](https://kiro.dev/docs/cli) with the [Agent Toolkit for AWS](https://docs.aws.amazon.com/agent-toolkit/latest/userguide/what-is-agent-toolkit.html) providing the AWS MCP Server and curated AWS skills
 - Optional desktop environment with [Kiro IDE](https://kiro.dev/docs/) accessed through DCV
-- Git version control using [git-remote-s3](https://github.com/awslabs/git-remote-s3) with Amazon S3 storage
+- Git version control using [AWS CodeCommit](https://docs.aws.amazon.com/codecommit/latest/userguide/welcome.html) with native CodePipeline integration
 - Automated deployments using AWS CodePipeline and AWS CodeBuild
 - Password rotation using AWS Secrets Manager (30-day automatic rotation)
 - Pre-configured AWS development environment:
@@ -59,7 +58,7 @@ This solution deploys a complete browser-based development environment with VS C
    - Provide S3 bucket name `S3AssetBucket` and `S3AssetPrefix` parameters
 3. Access VS Code through the provided CloudFormation output URL
 4. Get your password from AWS Secrets Manager (link in outputs)
-5. Click *File* > *Open Folder* and navigate to `/home/ec2-user/my-workspace`. This is the git/S3 initialized project directory
+5. code-server opens directly in `/home/ec2-user/workspace/my-workspace`, the CodeCommit-backed project directory
 6. Test code in `dev`, copy to `release`, commit and push to trigger deployment
 
 
@@ -67,16 +66,19 @@ This solution deploys a complete browser-based development environment with VS C
 
 | Parameter | Description |
 |-----------|-------------|
+| `AwsCliVersion` | Version of the AWS CLI v2 to install (official installer, replaces the older AL2023 packaged CLI) |
 | `CodeServerVersion` | Version of code-server to install |
+| `UvVersion` | Version of the uv Python package manager to install (provides uvx for running MCP servers) |
+| `TerraformExtensionVersion` | Version of the HashiCorp Terraform code-server extension |
+| `DotNetVersion` | .NET SDK version installed when `InstallDotNet` is enabled (8.0 or 10.0) |
 | `GitHubRepo` | Public repository to clone as initial workspace. Note: Using a custom repository will not include the sample application |
-| `GitHubBranch` | GitHub branch to use for devbox-setup.sh script (default: main) |
 | `S3AssetBucket` | (Optional) S3 bucket containing initial workspace content. Overwrites GitHubRepo if provided |
 | `S3AssetPrefix` | (Optional) S3 bucket asset prefix path. Only required when S3AssetBucket is specified. Needs to end with `/` |
 | `DeployPipeline` | Enable AWS CodePipeline deployments |
 | `RotateSecret` | Enable AWS Secrets Manager rotation |
 | `AutoSetDeveloperProfile` | Automatically set Developer profile as default in code-server terminal sessions without requiring manual elevation |
 | `EnableKiroIDE` | Enable Kiro IDE desktop application with DCV |
-| `InstallDotNet` | Install .NET SDK  |
+| `InstallDotNet` | Install .NET SDK (version set by `DotNetVersion`) |
 | `InstanceArchitecture` | Choose between ARM (arm64) and x86 (amd64) architecture (Kiro IDE requires x86) |
 | `InstanceType` | Pick Amazon EC2 instance type (t3a.large and up recommended for Kiro IDE) |
 
@@ -91,6 +93,12 @@ Here are some handy files you'll find on the EC2 instance:
 | `/var/lib/cloud/scripts/per-boot/setup.sh` | Setup script location (runs on every boot) |
 | `/var/log/devbox-setup.log` | Log file for setup script output |
 
+The setup script is embedded in the CloudFormation template as an AWS Systems Manager (SSM) document, so the solution is fully self-contained with no external downloads at boot. The instance fetches the script from the document on every boot and skips completed steps. To re-run it on a live instance:
+
+```bash
+aws ssm send-command --document-name <PrefixCode>-document-devbox-setup --instance-ids <instance-id>
+```
+
 ## Kiro Setup
 
 ### Prerequisites
@@ -100,6 +108,8 @@ Here are some handy files you'll find on the EC2 instance:
 3. Follow the [Subscribing your team to Kiro](https://kiro.dev/docs/enterprise/subscribe/) guide
 
 ### Kiro CLI
+
+The [Agent Toolkit for AWS](https://docs.aws.amazon.com/agent-toolkit/latest/userguide/what-is-agent-toolkit.html) is pre-configured during instance setup: the AWS MCP Server connection and curated AWS skills are installed automatically for Kiro, the default agent, and the included custom agents. No manual MCP configuration is needed.
 
 From the code-server terminal:
 
@@ -111,7 +121,7 @@ From the code-server terminal:
 3. (optional) Set the default agent: `kiro-cli settings chat.defaultAgent platform-engineer`
 4. Start with `kiro-cli` or `kiro-cli --agent platform-engineer`
 5. Use `/model` to select AI model, `/tools` to see available MCP tools
-6. Browse [AWS Labs MCP](https://github.com/awslabs/mcp) for additional MCP servers
+6. Discover additional AWS skills with `aws agent-toolkit search-skills --search-query <text>`
 7. Create additional agents by adding new files to `.kiro/agents/`
 8. Use Kiro CLI to accelerate your development 🚀
 
@@ -120,11 +130,10 @@ From the code-server terminal:
 When `EnableKiroIDE=true`, access the full desktop environment through DCV using either a web browser or Amazon DCV Client:
 
 ### Browser Access
-1. Get the DCV connection URL from CloudFormation stack outputs (DCVWebUrl)
+1. Get the DCV connection URL from CloudFormation stack outputs (`03KiroIDEURL`)
 2. Login with username and password from Secrets Manager
-3. Launch Kiro IDE from the applications menu or run `kiro-ide` in terminal
+3. Launch Kiro IDE from the applications menu (opens in the workspace folder) or run `kiro-ide` in terminal
 4. Firefox opens automatically for IAM Identity Center authentication (may take ~10 seconds)
-5. Open `/home/ec2-user/workspace/my-workspace` folder (git-enabled workspace)
 
 ℹ️ **Tip:** Having issues with copy/paste? See the [DCV copy/paste documentation](https://docs.aws.amazon.com/dcv/latest/userguide/using-copy-paste.html).
 
@@ -132,12 +141,11 @@ When `EnableKiroIDE=true`, access the full desktop environment through DCV using
 For better performance and additional features, use the Amazon DCV Client:
 
 1. [Download Amazon DCV Client](https://download.nice-dcv.com/) for your operating system
-2. Get the DCV connection URL from CloudFormation stack outputs (DCVWebUrl)
+2. Get the DCV connection URL from CloudFormation stack outputs (`03KiroIDEURL`)
 3. Open the DCV Client and connect using the URL
 4. Login with username and password from Secrets Manager
-5. Launch Kiro IDE from the applications menu or run `kiro-ide` in terminal
+5. Launch Kiro IDE from the applications menu (opens in the workspace folder) or run `kiro-ide` in terminal
 6. Firefox opens automatically for IAM Identity Center authentication if required (may take ~10 seconds)
-7. Open `/home/ec2-user/workspace/my-workspace` folder (git-enabled workspace)
 
 ## AWS IAM Roles
 
@@ -155,7 +163,7 @@ If you wish to have elevated AWS permissions automatically enabled in all new te
 
 ## Architecture
 
-The environment runs in a private subnet with CloudFront access, using S3 for git storage and CodePipeline for automated deployments.
+The environment runs in a private subnet with CloudFront access, using CodeCommit for git storage and CodePipeline for automated deployments.
 
 ![Architecture Diagram](img/architecture.png)
 
@@ -181,6 +189,8 @@ The application deploys automatically when you set the CloudFormation parameter 
 3. Wait for pipeline completion
 
 Failing to run and approve the destroy pipeline will leave orphaned infrastructure resources in your AWS account that were created by Terraform and will need to be cleaned up manually.
+
+ℹ️ **Note**: Stack deletion can fail on the logging bucket if new ALB or CloudFront log deliveries arrive during deletion. If that happens, empty the logging bucket (including object versions) and retry the stack deletion.
 
 ## Security Considerations
 

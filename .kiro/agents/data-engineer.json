@@ -7,90 +7,14 @@
     "file://README.md"
   ],
   "mcpServers": {
-    "awslabs.core-mcp-server": {
-      "command": "uvenv",
+    "aws-mcp": {
+      "command": "uvx",
       "args": [
-        "run",
-        "--python",
-        "3.13",
-        "awslabs.core-mcp-server"
+        "mcp-proxy-for-aws@latest",
+        "https://aws-mcp.us-east-1.api.aws/mcp"
       ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
-    "awslabs.aws-documentation-mcp-server": {
-      "command": "uvenv",
-      "args": [
-        "run",
-        "--python",
-        "3.13",
-        "awslabs.aws-documentation-mcp-server"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR",
-        "AWS_DOCUMENTATION_PARTITION": "aws"
-      }
-    },
-    "awslabs.s3-tables-mcp-server": {
-      "command": "uvenv",
-      "args": [
-        "run",
-        "--python",
-        "3.13",
-        "awslabs.s3-tables-mcp-server"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
-    "awslabs.dynamodb-mcp-server": {
-      "command": "uvenv",
-      "args": [
-        "run",
-        "--python",
-        "3.13",
-        "awslabs.dynamodb-mcp-server"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
-    "awslabs.cloudwatch-mcp-server": {
-      "command": "uvenv",
-      "args": [
-        "run",
-        "--python",
-        "3.13",
-        "awslabs.cloudwatch-mcp-server"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
-    "awslabs.redshift-mcp-server": {
-      "command": "uvenv",
-      "args": [
-        "run",
-        "--python",
-        "3.13",
-        "awslabs.redshift-mcp-server"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
-    "awslabs.aws-pricing-mcp-server": {
-      "command": "uvenv",
-      "args": [
-        "run",
-        "--python",
-        "3.13",
-        "awslabs.aws-pricing-mcp-server"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
+      "timeout": 100000,
+      "transport": "stdio"
     }
   }
 }
