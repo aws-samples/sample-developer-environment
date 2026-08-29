@@ -1121,6 +1121,27 @@ Resources:
                 Resource:
                   - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:*
                   - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}::document/AWS-StartPortForwardingSession
+        # SSM agent registration and command delivery (least-privilege subset of AmazonSSMManagedInstanceCore).
+        # Required for Run Command: secret rotation Lambda and manual setup re-runs use ssm send-command.
+        # These actions do not support resource-level permissions.
+        - PolicyName: !Sub ${PrefixCode}-iampolicy-codeserver-ssmagent
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:UpdateInstanceInformation
+                  - ssmmessages:CreateControlChannel
+                  - ssmmessages:CreateDataChannel
+                  - ssmmessages:OpenControlChannel
+                  - ssmmessages:OpenDataChannel
+                  - ec2messages:AcknowledgeMessage
+                  - ec2messages:DeleteMessage
+                  - ec2messages:FailMessage
+                  - ec2messages:GetEndpoint
+                  - ec2messages:GetMessages
+                  - ec2messages:SendReply
+                Resource: "*"
         - PolicyName: !Sub ${PrefixCode}-iampolicy-codeserver-CloudWatch
           PolicyDocument:
             Version: 2012-10-17
