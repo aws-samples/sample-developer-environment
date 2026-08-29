@@ -31,7 +31,7 @@ Metadata:
         Parameters:
           - AwsCliVersion
           - CodeServerVersion
-          - UvenvVersion
+          - UvVersion
           - TerraformExtensionVersion
       - Label:
           default: Tagging and Naming
@@ -133,10 +133,10 @@ Parameters:
     Description: Version of code-server to install. See available versions at github.com/coder/code-server/releases
     AllowedPattern: '^\d+\.\d+\.\d+$'
     ConstraintDescription: Must be a semantic version, e.g. 4.135.0
-  UvenvVersion:
+  UvVersion:
     Type: String
-    Default: "3.11.0"
-    Description: Version of uvenv to install (also installs uv at the exact version uvenv pins as a dependency). See pypi.org/project/uvenv
+    Default: "0.12.7"
+    Description: Version of the uv Python package manager to install (provides uvx for running MCP servers). See pypi.org/project/uv
     AllowedPattern: '^\d+\.\d+\.\d+$'
     ConstraintDescription: Must be a semantic version, e.g. 3.11.0
   TerraformExtensionVersion:
@@ -1689,10 +1689,8 @@ Resources:
                   sudo -u ec2-user bash /tmp/install-kiro-cli.sh
                   rm -f /tmp/install-kiro-cli.sh
 
-                  # Install other prerequisites. uvenv pins an exact uv version as a dependency,
-                  # so uv is not installed separately (a separate pin would be silently overridden).
-                  pip3 install uvenv==${UVENV_VERSION}
-                  pip3 show uvenv || exit 1
+                  # Install uv (provides uvx, used to run the AWS MCP Server proxy)
+                  pip3 install uv==${UV_VERSION}
                   pip3 show uv || exit 1
                   ' "Failed to set up Kiro prerequisites"
 
@@ -1850,6 +1848,14 @@ Resources:
                       echo "WARNING: Kiro IDE requires amd64 architecture. Skipping Kiro IDE installation."
                   fi
 
+                  # Configure Agent Toolkit for AWS (AWS MCP Server connection and curated AWS skills for Kiro)
+                  install_component "agent_toolkit_configured" '
+                  mkdir -p /home/ec2-user/.kiro
+                  chown ec2-user:ec2-user /home/ec2-user/.kiro
+                  # The Agent Toolkit service endpoint is only available in us-east-1
+                  su - ec2-user -c "aws configure agent-toolkit --yes --region us-east-1"
+                  ' "Failed to configure Agent Toolkit for AWS"
+
                   # Print summary of installation
                   echo "INFO: Setup script completed at $(date)"
                   echo "INFO: Installation summary:"
@@ -1918,7 +1924,7 @@ Resources:
 
           # Pinned package versions (from CloudFormation parameters)
           export AWS_CLI_VERSION="${AwsCliVersion}"
-          export UVENV_VERSION="${UvenvVersion}"
+          export UV_VERSION="${UvVersion}"
           export TERRAFORM_EXT_VERSION="${TerraformExtensionVersion}"
           export DOTNET_VERSION="${DotNetVersion}"
 

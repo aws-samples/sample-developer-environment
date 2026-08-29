@@ -39,7 +39,7 @@ This solution deploys a complete browser-based development environment with [Kir
 ## Key Features
 
 - Browser-based VS Code using [code-server](https://github.com/coder/code-server) accessed through Amazon CloudFront
-- [Kiro CLI](https://kiro.dev/docs/cli) with uv and uvenv for installing MCP servers
+- [Kiro CLI](https://kiro.dev/docs/cli) with the [Agent Toolkit for AWS](https://docs.aws.amazon.com/agent-toolkit/latest/userguide/what-is-agent-toolkit.html) providing the AWS MCP Server and curated AWS skills
 - Optional desktop environment with [Kiro IDE](https://kiro.dev/docs/) accessed through DCV
 - Git version control using [AWS CodeCommit](https://docs.aws.amazon.com/codecommit/latest/userguide/welcome.html) with native CodePipeline integration
 - Automated deployments using AWS CodePipeline and AWS CodeBuild
@@ -68,7 +68,7 @@ This solution deploys a complete browser-based development environment with [Kir
 |-----------|-------------|
 | `AwsCliVersion` | Version of the AWS CLI v2 to install (official installer, replaces the older AL2023 packaged CLI) |
 | `CodeServerVersion` | Version of code-server to install |
-| `UvenvVersion` | Version of uvenv to install (uv is installed automatically at the version uvenv pins) |
+| `UvVersion` | Version of the uv Python package manager to install (provides uvx for running MCP servers) |
 | `TerraformExtensionVersion` | Version of the HashiCorp Terraform code-server extension |
 | `DotNetVersion` | .NET SDK version installed when `InstallDotNet` is enabled (8.0 or 10.0) |
 | `GitHubRepo` | Public repository to clone as initial workspace. Note: Using a custom repository will not include the sample application |
@@ -119,7 +119,7 @@ From the code-server terminal:
 3. (optional) Set the default agent: `kiro-cli settings chat.defaultAgent platform-engineer`
 4. Start with `kiro-cli` or `kiro-cli --agent platform-engineer`
 5. Use `/model` to select AI model, `/tools` to see available MCP tools
-6. Browse [AWS Labs MCP](https://github.com/awslabs/mcp) for additional MCP servers
+6. Discover additional AWS skills with `aws agent-toolkit search-skills --search-query <text>`
 7. Create additional agents by adding new files to `.kiro/agents/`
 8. Use Kiro CLI to accelerate your development 🚀
 
