@@ -8,9 +8,16 @@ Metadata:
         Parameters:
           - VpcCidr
       - Label:
-          default: Deployment Settings
+          default: Tool Versions
         Parameters:
           - CodeServerVersion
+          - UvVersion
+          - UvenvVersion
+          - TerraformExtensionVersion
+          - DotNetVersion
+      - Label:
+          default: Deployment Settings
+        Parameters:
           - GitHubRepo
           - S3AssetBucket
           - S3AssetPrefix
@@ -90,6 +97,31 @@ Parameters:
     Description: Version of code-server to install. See available versions at github.com/coder/code-server/releases
     AllowedPattern: '^\d+\.\d+\.\d+$'
     ConstraintDescription: Must be a semantic version, e.g. 4.135.0
+  UvVersion:
+    Type: String
+    Default: "0.12.7"
+    Description: Version of the uv Python package manager to install. See pypi.org/project/uv
+    AllowedPattern: '^\d+\.\d+\.\d+$'
+    ConstraintDescription: Must be a semantic version, e.g. 0.12.7
+  UvenvVersion:
+    Type: String
+    Default: "3.11.0"
+    Description: Version of uvenv to install. See pypi.org/project/uvenv
+    AllowedPattern: '^\d+\.\d+\.\d+$'
+    ConstraintDescription: Must be a semantic version, e.g. 3.11.0
+  TerraformExtensionVersion:
+    Type: String
+    Default: "2.40.0"
+    Description: Version of the HashiCorp Terraform code-server extension. See open-vsx.org/extension/hashicorp/terraform
+    AllowedPattern: '^\d+\.\d+\.\d+$'
+    ConstraintDescription: Must be a semantic version, e.g. 2.40.0
+  DotNetVersion:
+    Type: String
+    Default: "10.0"
+    Description: .NET SDK version to install when InstallDotNet is enabled. Must match an AL2023 dotnet-sdk package version
+    AllowedValues:
+      - "8.0"
+      - "10.0"
   InstanceArchitecture:
     Type: String
     Default: amd64
@@ -1537,7 +1569,7 @@ Resources:
                   # Install VS Code extensions
                   install_component "extensions_installed" '
                   su - ec2-user -c "code-server --install-extension amazonwebservices.aws-toolkit-vscode --force"
-                  su - ec2-user -c "code-server --install-extension hashicorp.terraform@2.40.0 --force"
+                  su - ec2-user -c "code-server --install-extension hashicorp.terraform@${TERRAFORM_EXT_VERSION} --force"
                   su - ec2-user -c "code-server --install-extension ms-azuretools.vscode-docker --force"
                   ' "Failed to install one or more extensions"
 
@@ -1865,10 +1897,11 @@ Resources:
           cat > $ENV_FILE << EOF
           # Environment variables for setup
 
-          # Pinned package versions
-          export UV_VERSION="0.12.7"
-          export UVENV_VERSION="3.11.0"
-          export DOTNET_VERSION="10.0"
+          # Pinned package versions (from CloudFormation parameters)
+          export UV_VERSION="${UvVersion}"
+          export UVENV_VERSION="${UvenvVersion}"
+          export TERRAFORM_EXT_VERSION="${TerraformExtensionVersion}"
+          export DOTNET_VERSION="${DotNetVersion}"
 
           # Variables from CloudFormation template
           export AWS_ACCOUNT_ID="${AWS::AccountId}"

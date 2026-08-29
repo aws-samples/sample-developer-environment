@@ -67,6 +67,10 @@ This solution deploys a complete browser-based development environment with VS C
 | Parameter | Description |
 |-----------|-------------|
 | `CodeServerVersion` | Version of code-server to install |
+| `UvVersion` | Version of the uv Python package manager to install |
+| `UvenvVersion` | Version of uvenv to install |
+| `TerraformExtensionVersion` | Version of the HashiCorp Terraform code-server extension |
+| `DotNetVersion` | .NET SDK version installed when `InstallDotNet` is enabled (8.0 or 10.0) |
 | `GitHubRepo` | Public repository to clone as initial workspace. Note: Using a custom repository will not include the sample application |
 | `S3AssetBucket` | (Optional) S3 bucket containing initial workspace content. Overwrites GitHubRepo if provided |
 | `S3AssetPrefix` | (Optional) S3 bucket asset prefix path. Only required when S3AssetBucket is specified. Needs to end with `/` |
