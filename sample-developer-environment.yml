@@ -1495,6 +1495,7 @@ Resources:
                     "extensions.autoUpdate": false,
                     "extensions.autoCheckUpdates": false,
                     "telemetry.telemetryLevel": "off",
+                    "chat.disableAIFeatures": true,
                     "security.workspace.trust.startupPrompt": "never",
                     "security.workspace.trust.enabled": false,
                     "security.workspace.trust.banner": "never",
