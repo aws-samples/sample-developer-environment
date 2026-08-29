@@ -1250,6 +1250,7 @@ Resources:
   ec2loggroup:
     Type: AWS::Logs::LogGroup
     Properties:
+      KmsKeyId: !GetAtt kmskey.Arn
       LogGroupName: !Sub /aws/ec2/${PrefixCode}-codeserver
       RetentionInDays: 14
       Tags:
