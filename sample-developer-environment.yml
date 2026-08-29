@@ -2510,6 +2510,7 @@ Resources:
     Condition: CreatePipeline
     Properties:
       Name: !Sub ${PrefixCode}-pipeline-terraform-build
+      PipelineType: V2
       RoleArn: !GetAtt iamrolepipeline.Arn
       ArtifactStore:
         Type: S3
@@ -2565,6 +2566,7 @@ Resources:
     Condition: CreatePipeline
     Properties:
       Name: !Sub ${PrefixCode}-pipeline-terraform-destroy
+      PipelineType: V2
       RoleArn: !GetAtt iamrolepipeline.Arn
       ArtifactStore:
         Type: S3
