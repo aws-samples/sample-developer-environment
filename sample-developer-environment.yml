@@ -86,8 +86,10 @@ Parameters:
       - false
   CodeServerVersion:
     Type: String
-    Default: "4.105.1"
+    Default: "4.135.0"
     Description: Version of code-server to install. See available versions at github.com/coder/code-server/releases
+    AllowedPattern: '^\d+\.\d+\.\d+$'
+    ConstraintDescription: Must be a semantic version, e.g. 4.135.0
   InstanceArchitecture:
     Type: String
     Default: amd64
@@ -1535,7 +1537,7 @@ Resources:
                   # Install VS Code extensions
                   install_component "extensions_installed" '
                   su - ec2-user -c "code-server --install-extension amazonwebservices.aws-toolkit-vscode --force"
-                  su - ec2-user -c "code-server --install-extension hashicorp.terraform --force"
+                  su - ec2-user -c "code-server --install-extension hashicorp.terraform@2.40.0 --force"
                   su - ec2-user -c "code-server --install-extension ms-azuretools.vscode-docker --force"
                   ' "Failed to install one or more extensions"
 
@@ -1637,17 +1639,9 @@ Resources:
                   rm -f /tmp/install-kiro-cli.sh
 
                   # Install other prerequisites
-                  if [ "${UV_VERSION}" = "latest" ]; then
-                      pip3 install uv
-                  else
-                      pip3 install uv==${UV_VERSION}
-                  fi
+                  pip3 install uv==${UV_VERSION}
                   pip3 show uv || exit 1
-                  if [ "${UVENV_VERSION}" = "latest" ]; then
-                      pip3 install uvenv
-                  else
-                      pip3 install uvenv==${UVENV_VERSION}
-                  fi
+                  pip3 install uvenv==${UVENV_VERSION}
                   pip3 show uvenv || exit 1
                   ' "Failed to set up Kiro prerequisites"
 
@@ -1890,14 +1884,10 @@ Resources:
           cat > $ENV_FILE << EOF
           # Environment variables for setup
 
-          # Package version variables
-          export BOTO3_VERSION="1.37.18"
-          export UV_PYTHON_VERSION="3.13"
-          export MCP_PYTHON_VERSION="3.13"
-          export UV_VERSION="latest"
-          # might not need below line
-          export UVENV_VERSION="latest"
-          export DOTNET_VERSION="8.0"
+          # Pinned package versions
+          export UV_VERSION="0.12.7"
+          export UVENV_VERSION="3.11.0"
+          export DOTNET_VERSION="10.0"
 
           # Variables from CloudFormation template
           export AWS_ACCOUNT_ID="${AWS::AccountId}"
