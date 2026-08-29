@@ -1,6 +1,6 @@
 # sample-developer-environment
 
-> 📢 **v2.0.0 released:** now fully self-contained in a single CloudFormation template, with CodeCommit version control. Using v1? See the [v1.0.0 release notes](https://github.com/aws-samples/sample-developer-environment/releases/tag/v1.0.0).
+> 📢 **v2.0.0 released:** now fully self-contained in a single CloudFormation template, with CodeCommit version control and the Agent Toolkit for AWS built in. Using v1? See the [v1.0.0 release notes](https://github.com/aws-samples/sample-developer-environment/releases/tag/v1.0.0).
 
 This solution deploys a complete browser-based development environment with [Kiro IDE](https://kiro.dev/docs/), [Kiro CLI](https://kiro.dev/docs/cli) and VS Code, plus version control and automated deployments, all from a single self-contained AWS CloudFormation template.
 
@@ -22,8 +22,8 @@ This solution deploys a complete browser-based development environment with [Kir
 .
 ├── .kiro/                            # Kiro workspace configuration directory
 │   └── agents/                       # Agent configuration directory
-│       ├── platform-engineer.json    # Platform engineering agent with MCP servers
-│       └── data-engineer.json        # Data engineering agent with MCP servers
+│       ├── platform-engineer.json    # Platform engineering agent using the AWS MCP Server
+│       └── data-engineer.json        # Data engineering agent using the AWS MCP Server
 ├── dev/                              # Development workspace
 │   └── README.md                     # Development guide
 ├── release/                          # Sample Terraform application
@@ -109,6 +109,8 @@ aws ssm send-command --document-name <PrefixCode>-document-devbox-setup --instan
 
 ### Kiro CLI
 
+The [Agent Toolkit for AWS](https://docs.aws.amazon.com/agent-toolkit/latest/userguide/what-is-agent-toolkit.html) is pre-configured during instance setup: the AWS MCP Server connection and curated AWS skills are installed automatically for Kiro, the default agent, and the included custom agents. No manual MCP configuration is needed.
+
 From the code-server terminal:
 
 1. Run `kiro-cli login --use-device-flow` and follow prompts for headless authentication
@@ -187,6 +189,8 @@ The application deploys automatically when you set the CloudFormation parameter 
 3. Wait for pipeline completion
 
 Failing to run and approve the destroy pipeline will leave orphaned infrastructure resources in your AWS account that were created by Terraform and will need to be cleaned up manually.
+
+ℹ️ **Note**: Stack deletion can fail on the logging bucket if new ALB or CloudFront log deliveries arrive during deletion. If that happens, empty the logging bucket (including object versions) and retry the stack deletion.
 
 ## Security Considerations
 
