@@ -58,7 +58,7 @@ This solution deploys a complete browser-based development environment with VS C
    - Provide S3 bucket name `S3AssetBucket` and `S3AssetPrefix` parameters
 3. Access VS Code through the provided CloudFormation output URL
 4. Get your password from AWS Secrets Manager (link in outputs)
-5. Click *File* > *Open Folder* and navigate to `/home/ec2-user/workspace/my-workspace`. This is the CodeCommit-backed project directory
+5. code-server opens directly in `/home/ec2-user/workspace/my-workspace`, the CodeCommit-backed project directory
 6. Test code in `dev`, copy to `release`, commit and push to trigger deployment
 
 
@@ -126,9 +126,8 @@ When `EnableKiroIDE=true`, access the full desktop environment through DCV using
 ### Browser Access
 1. Get the DCV connection URL from CloudFormation stack outputs (DCVWebUrl)
 2. Login with username and password from Secrets Manager
-3. Launch Kiro IDE from the applications menu or run `kiro-ide` in terminal
+3. Launch Kiro IDE from the applications menu (opens in the workspace folder) or run `kiro-ide` in terminal
 4. Firefox opens automatically for IAM Identity Center authentication (may take ~10 seconds)
-5. Open `/home/ec2-user/workspace/my-workspace` folder (git-enabled workspace)
 
 ℹ️ **Tip:** Having issues with copy/paste? See the [DCV copy/paste documentation](https://docs.aws.amazon.com/dcv/latest/userguide/using-copy-paste.html).
 
@@ -139,9 +138,8 @@ For better performance and additional features, use the Amazon DCV Client:
 2. Get the DCV connection URL from CloudFormation stack outputs (DCVWebUrl)
 3. Open the DCV Client and connect using the URL
 4. Login with username and password from Secrets Manager
-5. Launch Kiro IDE from the applications menu or run `kiro-ide` in terminal
+5. Launch Kiro IDE from the applications menu (opens in the workspace folder) or run `kiro-ide` in terminal
 6. Firefox opens automatically for IAM Identity Center authentication if required (may take ~10 seconds)
-7. Open `/home/ec2-user/workspace/my-workspace` folder (git-enabled workspace)
 
 ## AWS IAM Roles
 

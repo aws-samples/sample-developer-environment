@@ -1474,7 +1474,7 @@ Resources:
                   User=ec2-user
                   Environment=HOME=/home/ec2-user
                   WorkingDirectory=/home/ec2-user/workspace
-                  ExecStart=/usr/bin/code-server --config /home/ec2-user/.config/code-server/config.yaml
+                  ExecStart=/usr/bin/code-server --config /home/ec2-user/.config/code-server/config.yaml /home/ec2-user/workspace/my-workspace
                   Restart=always
 
                   [Install]
@@ -1771,7 +1771,7 @@ Resources:
                   Type=Application
                   Name=Kiro IDE
                   Icon=/opt/kiro-ide/resources/app/resources/linux/code.png
-                  Exec=/opt/kiro-ide/kiro
+                  Exec=/opt/kiro-ide/kiro /home/ec2-user/workspace/my-workspace
                   Terminal=false
                   Categories=Development;IDE;
                   KIROEOF
