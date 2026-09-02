@@ -539,6 +539,7 @@ Resources:
       RouteTableId: !Ref routetablepublic
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !GetAtt internetgateway.InternetGatewayId
+    DependsOn: internetgatewayattach
   routeassociationpublic01:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -684,6 +685,7 @@ Resources:
   ### Access Layer - ALB and CloudFront distribution for secure access to code-server
   albcodeserver:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: internetgatewayattach
     Properties:
       Name: !Sub ${PrefixCode}-alb-codeserver
       Scheme: internet-facing
@@ -1882,6 +1884,7 @@ Resources:
                   fi
   ec2codeserver:
     Type: AWS::EC2::Instance
+    DependsOn: ssmparametercloudwatchlinux
     Properties:
       ImageId: !If [IsArm64, !Ref AMIArmCodeServer, !Ref AMIx86CodeServer]
       InstanceType: !Ref InstanceType
@@ -1889,7 +1892,6 @@ Resources:
       SubnetId: !Ref subnetprivate01
       IamInstanceProfile: !Ref iaminstanceprofilecodeserver
       Monitoring: true
-      PrivateIpAddress: !Sub ${VpcCidr}.3.100
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
